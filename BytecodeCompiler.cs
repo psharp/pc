@@ -1,15 +1,35 @@
+/// <summary>
+/// Compiles Pascal AST to bytecode.
+/// Translates high-level Pascal constructs into stack-based bytecode instructions.
+/// </summary>
 using System;
 using System.Collections.Generic;
 
 namespace PascalCompiler;
 
+/// <summary>
+/// Bytecode compiler for Pascal programs.
+/// Converts AST nodes to executable bytecode instructions for the virtual machine.
+/// </summary>
 public class BytecodeCompiler
 {
+    /// <summary>The bytecode program being built.</summary>
     private BytecodeProgram _program = null!;
+
+    /// <summary>Counter for generating unique labels.</summary>
     private int _labelCounter;
+
+    /// <summary>Stack of break target labels for loop compilation.</summary>
     private readonly Stack<string> _breakLabels = new();
+
+    /// <summary>Stack of continue target labels for loop compilation.</summary>
     private readonly Stack<string> _continueLabels = new();
 
+    /// <summary>
+    /// Compiles a Pascal program to bytecode.
+    /// </summary>
+    /// <param name="program">The program AST to compile.</param>
+    /// <returns>A BytecodeProgram ready for execution.</returns>
     public BytecodeProgram Compile(ProgramNode program)
     {
         _program = new BytecodeProgram(program.Name);

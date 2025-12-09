@@ -1,15 +1,33 @@
+/// <summary>
+/// Syntactic analyzer (parser) for the Pascal programming language.
+/// Converts a stream of tokens into an Abstract Syntax Tree (AST).
+/// Uses recursive descent parsing to build the AST structure.
+/// </summary>
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace PascalCompiler;
 
+/// <summary>
+/// Parser class for Pascal source code.
+/// Implements a recursive descent parser that builds an AST from tokens.
+/// </summary>
 public class Parser
 {
+    /// <summary>The list of tokens to parse.</summary>
     private readonly List<Token> _tokens;
+
+    /// <summary>Current position in the token list.</summary>
     private int _position;
+
+    /// <summary>The current token being examined.</summary>
     private Token _currentToken;
 
+    /// <summary>
+    /// Initializes a new instance of the Parser class with a list of tokens.
+    /// </summary>
+    /// <param name="tokens">The list of tokens produced by the lexer.</param>
     public Parser(List<Token> tokens)
     {
         _tokens = tokens;
@@ -17,12 +35,21 @@ public class Parser
         _currentToken = _tokens[0];
     }
 
+    /// <summary>
+    /// Advances to the next token in the token stream.
+    /// </summary>
     private void Advance()
     {
         _position++;
         _currentToken = _position < _tokens.Count ? _tokens[_position] : _tokens[^1];
     }
 
+    /// <summary>
+    /// Expects the current token to be of a specific type and advances.
+    /// Throws an exception if the token type doesn't match.
+    /// </summary>
+    /// <param name="type">The expected token type.</param>
+    /// <exception cref="Exception">Thrown when the token type doesn't match.</exception>
     private void Expect(TokenType type)
     {
         if (_currentToken.Type != type)
@@ -32,11 +59,21 @@ public class Parser
         Advance();
     }
 
+    /// <summary>
+    /// Checks if the current token matches any of the specified types.
+    /// </summary>
+    /// <param name="types">The token types to check against.</param>
+    /// <returns>True if the current token matches any of the types.</returns>
     private bool Match(params TokenType[] types)
     {
         return types.Contains(_currentToken.Type);
     }
 
+    /// <summary>
+    /// Parses a complete Pascal program.
+    /// Syntax: program Name; [uses ...;] [type ...] [var ...] [procedures/functions] begin ... end.
+    /// </summary>
+    /// <returns>A ProgramNode representing the parsed program.</returns>
     public ProgramNode ParseProgram()
     {
         Expect(TokenType.PROGRAM);
@@ -1200,6 +1237,11 @@ public class Parser
         return new DisposeNode(ptrVar);
     }
 
+    /// <summary>
+    /// Parses a Pascal unit/module file.
+    /// Syntax: unit Name; interface [uses ...] [declarations] implementation [declarations] [initialization] [finalization] end.
+    /// </summary>
+    /// <returns>A UnitNode representing the parsed unit.</returns>
     public UnitNode ParseUnit()
     {
         Expect(TokenType.UNIT);

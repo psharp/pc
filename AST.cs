@@ -1,25 +1,64 @@
+/// <summary>
+/// Abstract Syntax Tree (AST) node definitions for the Pascal compiler.
+/// This file contains all AST node types used to represent Pascal programs in memory.
+/// The AST is built by the Parser and consumed by the SemanticAnalyzer, Interpreter, and BytecodeCompiler.
+/// </summary>
 using System.Collections.Generic;
 
 namespace PascalCompiler;
 
+/// <summary>
+/// Abstract base class for all AST nodes.
+/// All nodes in the syntax tree inherit from this class.
+/// </summary>
 public abstract class ASTNode
 {
 }
 
+/// <summary>
+/// Represents a Pascal program (the root node of the AST).
+/// Contains all top-level declarations and the main program block.
+/// Syntax: program ProgramName; uses Units; var/type declarations; begin...end.
+/// </summary>
 public class ProgramNode : ASTNode
 {
+    /// <summary>Gets the name of the program.</summary>
     public string Name { get; }
+
+    /// <summary>Gets the list of units referenced in the 'uses' clause.</summary>
     public List<string> UsedUnits { get; }
+
+    /// <summary>Gets the list of record type definitions.</summary>
     public List<RecordTypeNode> RecordTypes { get; }
+
+    /// <summary>Gets the list of enumeration type definitions.</summary>
     public List<EnumTypeNode> EnumTypes { get; }
+
+    /// <summary>Gets the list of simple variable declarations.</summary>
     public List<VarDeclarationNode> Variables { get; }
+
+    /// <summary>Gets the list of array variable declarations.</summary>
     public List<ArrayVarDeclarationNode> ArrayVariables { get; }
+
+    /// <summary>Gets the list of record variable declarations.</summary>
     public List<RecordVarDeclarationNode> RecordVariables { get; }
+
+    /// <summary>Gets the list of file variable declarations.</summary>
     public List<FileVarDeclarationNode> FileVariables { get; }
+
+    /// <summary>Gets the list of pointer variable declarations.</summary>
     public List<PointerVarDeclarationNode> PointerVariables { get; }
+
+    /// <summary>Gets the list of set variable declarations.</summary>
     public List<SetVarDeclarationNode> SetVariables { get; }
+
+    /// <summary>Gets the list of procedure declarations.</summary>
     public List<ProcedureDeclarationNode> Procedures { get; }
+
+    /// <summary>Gets the list of function declarations.</summary>
     public List<FunctionDeclarationNode> Functions { get; }
+
+    /// <summary>Gets the main program block (begin...end).</summary>
     public BlockNode Block { get; }
 
     public ProgramNode(string name, List<string> usedUnits, List<RecordTypeNode> recordTypes, List<EnumTypeNode> enumTypes,
@@ -45,8 +84,13 @@ public class ProgramNode : ASTNode
     }
 }
 
+/// <summary>
+/// Represents a block of statements (begin...end).
+/// A block contains a sequence of statements executed sequentially.
+/// </summary>
 public class BlockNode : ASTNode
 {
+    /// <summary>Gets the list of statements in this block.</summary>
     public List<StatementNode> Statements { get; }
 
     public BlockNode(List<StatementNode> statements)
@@ -55,13 +99,24 @@ public class BlockNode : ASTNode
     }
 }
 
+/// <summary>
+/// Abstract base class for all statement nodes.
+/// Statements represent executable code (assignments, loops, conditionals, procedure calls, etc.).
+/// </summary>
 public abstract class StatementNode : ASTNode
 {
 }
 
+/// <summary>
+/// Represents a variable assignment statement.
+/// Syntax: Variable := Expression;
+/// </summary>
 public class AssignmentNode : StatementNode
 {
+    /// <summary>Gets the name of the variable being assigned to.</summary>
     public string Variable { get; }
+
+    /// <summary>Gets the expression whose value is assigned to the variable.</summary>
     public ExpressionNode Expression { get; }
 
     public AssignmentNode(string variable, ExpressionNode expression)
@@ -71,10 +126,20 @@ public class AssignmentNode : StatementNode
     }
 }
 
+/// <summary>
+/// Represents an if-then-else conditional statement.
+/// Syntax: if Condition then ThenBranch else ElseBranch;
+/// The else branch is optional.
+/// </summary>
 public class IfNode : StatementNode
 {
+    /// <summary>Gets the boolean condition to evaluate.</summary>
     public ExpressionNode Condition { get; }
+
+    /// <summary>Gets the statement executed when the condition is true.</summary>
     public StatementNode ThenBranch { get; }
+
+    /// <summary>Gets the optional statement executed when the condition is false.</summary>
     public StatementNode? ElseBranch { get; }
 
     public IfNode(ExpressionNode condition, StatementNode thenBranch, StatementNode? elseBranch = null)
@@ -85,9 +150,17 @@ public class IfNode : StatementNode
     }
 }
 
+/// <summary>
+/// Represents a while loop statement.
+/// Syntax: while Condition do Body;
+/// Executes Body repeatedly while Condition is true.
+/// </summary>
 public class WhileNode : StatementNode
 {
+    /// <summary>Gets the loop condition.</summary>
     public ExpressionNode Condition { get; }
+
+    /// <summary>Gets the statement executed in each iteration.</summary>
     public StatementNode Body { get; }
 
     public WhileNode(ExpressionNode condition, StatementNode body)
@@ -149,14 +222,27 @@ public class VarDeclarationNode : ASTNode
     }
 }
 
+/// <summary>
+/// Abstract base class for all expression nodes.
+/// Expressions represent values and computations (literals, variables, operations, function calls, etc.).
+/// </summary>
 public abstract class ExpressionNode : ASTNode
 {
 }
 
+/// <summary>
+/// Represents a binary operation (e.g., a + b, x < y, p and q).
+/// Binary operations have two operands and an operator.
+/// </summary>
 public class BinaryOpNode : ExpressionNode
 {
+    /// <summary>Gets the left operand expression.</summary>
     public ExpressionNode Left { get; }
+
+    /// <summary>Gets the operator token type (PLUS, MINUS, MULTIPLY, LESS_THAN, etc.).</summary>
     public TokenType Operator { get; }
+
+    /// <summary>Gets the right operand expression.</summary>
     public ExpressionNode Right { get; }
 
     public BinaryOpNode(ExpressionNode left, TokenType op, ExpressionNode right)
@@ -167,9 +253,16 @@ public class BinaryOpNode : ExpressionNode
     }
 }
 
+/// <summary>
+/// Represents a unary operation (e.g., -x, not b).
+/// Unary operations have one operand and an operator.
+/// </summary>
 public class UnaryOpNode : ExpressionNode
 {
+    /// <summary>Gets the operator token type (MINUS, NOT).</summary>
     public TokenType Operator { get; }
+
+    /// <summary>Gets the operand expression.</summary>
     public ExpressionNode Operand { get; }
 
     public UnaryOpNode(TokenType op, ExpressionNode operand)
@@ -733,26 +826,68 @@ public class InNode : ExpressionNode
 }
 
 // Unit declaration node
+/// <summary>
+/// Represents a Pascal unit/module (the root node for unit files).
+/// Units provide code organization with interface (public) and implementation (private) sections.
+/// Syntax: unit UnitName; interface uses...; declarations; implementation declarations; end.
+/// </summary>
 public class UnitNode : ASTNode
 {
+    /// <summary>Gets the name of the unit.</summary>
     public string Name { get; }
+
+    /// <summary>Gets the list of units referenced in the 'uses' clause.</summary>
     public List<string> UsedUnits { get; }
+
+    /// <summary>Gets record types defined in the interface section (public).</summary>
     public List<RecordTypeNode> InterfaceRecordTypes { get; }
+
+    /// <summary>Gets enumeration types defined in the interface section (public).</summary>
     public List<EnumTypeNode> InterfaceEnumTypes { get; }
+
+    /// <summary>Gets variables declared in the interface section (public).</summary>
     public List<VarDeclarationNode> InterfaceVariables { get; }
+
+    /// <summary>Gets procedure headers declared in the interface section (public).</summary>
     public List<ProcedureDeclarationNode> InterfaceProcedures { get; }
+
+    /// <summary>Gets function headers declared in the interface section (public).</summary>
     public List<FunctionDeclarationNode> InterfaceFunctions { get; }
+
+    /// <summary>Gets record types defined in the implementation section (private).</summary>
     public List<RecordTypeNode> ImplementationRecordTypes { get; }
+
+    /// <summary>Gets enumeration types defined in the implementation section (private).</summary>
     public List<EnumTypeNode> ImplementationEnumTypes { get; }
+
+    /// <summary>Gets variables declared in the implementation section (private).</summary>
     public List<VarDeclarationNode> ImplementationVariables { get; }
+
+    /// <summary>Gets array variables declared in the implementation section (private).</summary>
     public List<ArrayVarDeclarationNode> ImplementationArrayVariables { get; }
+
+    /// <summary>Gets record variables declared in the implementation section (private).</summary>
     public List<RecordVarDeclarationNode> ImplementationRecordVariables { get; }
+
+    /// <summary>Gets file variables declared in the implementation section (private).</summary>
     public List<FileVarDeclarationNode> ImplementationFileVariables { get; }
+
+    /// <summary>Gets pointer variables declared in the implementation section (private).</summary>
     public List<PointerVarDeclarationNode> ImplementationPointerVariables { get; }
+
+    /// <summary>Gets set variables declared in the implementation section (private).</summary>
     public List<SetVarDeclarationNode> ImplementationSetVariables { get; }
+
+    /// <summary>Gets procedure implementations in the implementation section.</summary>
     public List<ProcedureDeclarationNode> ImplementationProcedures { get; }
+
+    /// <summary>Gets function implementations in the implementation section.</summary>
     public List<FunctionDeclarationNode> ImplementationFunctions { get; }
+
+    /// <summary>Gets the optional initialization block executed when the unit is loaded.</summary>
     public BlockNode? InitializationBlock { get; }
+
+    /// <summary>Gets the optional finalization block executed when the program exits.</summary>
     public BlockNode? FinalizationBlock { get; }
 
     public UnitNode(string name, List<string> usedUnits,

@@ -1,8 +1,16 @@
+/// <summary>
+/// Bytecode instruction set and program structure definitions for the Pascal virtual machine.
+/// Defines opcodes, instruction format, and compiled program representation.
+/// </summary>
 using System;
 using System.Collections.Generic;
 
 namespace PascalCompiler;
 
+/// <summary>
+/// Enumeration of all bytecode operation codes supported by the Pascal virtual machine.
+/// Each opcode represents a single VM instruction.
+/// </summary>
 public enum OpCode : byte
 {
     // Stack operations
@@ -80,33 +88,69 @@ public enum OpCode : byte
     NOP             // No operation
 }
 
+/// <summary>
+/// Represents a single bytecode instruction with an opcode and optional operand.
+/// Instructions are executed sequentially by the virtual machine.
+/// </summary>
 public class Instruction
 {
+    /// <summary>Gets the operation code for this instruction.</summary>
     public OpCode OpCode { get; }
+
+    /// <summary>Gets the optional operand value (can be int, double, string, bool, array, etc.).</summary>
     public object? Operand { get; }
 
+    /// <summary>
+    /// Initializes a new bytecode instruction.
+    /// </summary>
+    /// <param name="opCode">The operation code.</param>
+    /// <param name="operand">Optional operand value.</param>
     public Instruction(OpCode opCode, object? operand = null)
     {
         OpCode = opCode;
         Operand = operand;
     }
 
+    /// <summary>
+    /// Returns a string representation of the instruction for disassembly output.
+    /// </summary>
     public override string ToString()
     {
         return Operand != null ? $"{OpCode} {Operand}" : OpCode.ToString();
     }
 }
 
+/// <summary>
+/// Represents a compiled Pascal program in bytecode format.
+/// Contains all instructions, metadata, and symbol information needed for execution.
+/// </summary>
 public class BytecodeProgram
 {
+    /// <summary>Gets the name of the program.</summary>
     public string Name { get; }
+
+    /// <summary>Gets the list of units used by this program (for automatic loading).</summary>
     public List<string> UsedUnits { get; }
+
+    /// <summary>Gets the list of bytecode instructions to execute.</summary>
     public List<Instruction> Instructions { get; }
+
+    /// <summary>Gets the dictionary of labels mapped to instruction addresses.</summary>
     public Dictionary<string, int> Labels { get; }
+
+    /// <summary>Gets the dictionary of constant values.</summary>
     public Dictionary<string, object?> Constants { get; }
+
+    /// <summary>Gets the list of variable names.</summary>
     public List<string> Variables { get; }
+
+    /// <summary>Gets the dictionary of function/procedure metadata.</summary>
     public Dictionary<string, FunctionInfo> Functions { get; }
+
+    /// <summary>Gets the dictionary of enumeration type definitions.</summary>
     public Dictionary<string, EnumInfo> EnumTypes { get; }
+
+    /// <summary>Gets the dictionary of array metadata.</summary>
     public Dictionary<string, ArrayInfo> Arrays { get; }
 
     public BytecodeProgram(string name)

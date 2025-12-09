@@ -1,24 +1,57 @@
+/// <summary>
+/// Semantic analyzer for Pascal programs.
+/// Performs type checking, symbol resolution, and semantic validation on the AST.
+/// Collects errors rather than throwing exceptions for better error reporting.
+/// </summary>
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace PascalCompiler;
 
+/// <summary>
+/// Performs semantic analysis on Pascal programs and units.
+/// Validates types, resolves symbols, and checks semantic correctness.
+/// </summary>
 public class SemanticAnalyzer
 {
+    /// <summary>Symbol table mapping variable names to types.</summary>
     private readonly Dictionary<string, string> _symbolTable = new();
+
+    /// <summary>Maps array variable names to their type information.</summary>
     private readonly Dictionary<string, ArrayTypeNode> _arrayTypes = new();
-    private readonly Dictionary<string, string> _recordVariables = new(); // maps variable name to record type name
+
+    /// <summary>Maps record variable names to their record type names.</summary>
+    private readonly Dictionary<string, string> _recordVariables = new();
+
+    /// <summary>Maps record type names to their definitions.</summary>
     private readonly Dictionary<string, RecordTypeNode> _recordTypeDefinitions = new();
-    private readonly Dictionary<string, EnumTypeNode> _enumTypeDefinitions = new(); // maps enum type name to definition
-    private readonly Dictionary<string, string> _enumValues = new(); // maps enum value name to enum type name
-    private readonly Dictionary<string, string> _setVariables = new(); // maps set variable name to element type
-    private readonly Dictionary<string, FileVarDeclarationNode> _fileVariables = new(); // maps file variable name to declaration
-    private readonly Dictionary<string, string> _pointerVariables = new(); // maps pointer variable name to pointed type
+
+    /// <summary>Maps enumeration type names to their definitions.</summary>
+    private readonly Dictionary<string, EnumTypeNode> _enumTypeDefinitions = new();
+
+    /// <summary>Maps enumeration value names to their enum type names.</summary>
+    private readonly Dictionary<string, string> _enumValues = new();
+
+    /// <summary>Maps set variable names to their element types.</summary>
+    private readonly Dictionary<string, string> _setVariables = new();
+
+    /// <summary>Maps file variable names to their declarations.</summary>
+    private readonly Dictionary<string, FileVarDeclarationNode> _fileVariables = new();
+
+    /// <summary>Maps pointer variable names to their pointed-to types.</summary>
+    private readonly Dictionary<string, string> _pointerVariables = new();
+
+    /// <summary>Maps procedure names to their declarations.</summary>
     private readonly Dictionary<string, ProcedureDeclarationNode> _procedures = new();
+
+    /// <summary>Maps function names to their declarations.</summary>
     private readonly Dictionary<string, FunctionDeclarationNode> _functions = new();
+
+    /// <summary>List of semantic errors found during analysis.</summary>
     private readonly List<string> _errors = new();
 
+    /// <summary>Gets the list of semantic errors.</summary>
     public List<string> Errors => _errors;
 
     public void Analyze(UnitNode unit)

@@ -1,30 +1,68 @@
+/// <summary>
+/// Stack-based virtual machine for executing Pascal bytecode.
+/// Executes compiled bytecode programs with full support for procedures, functions, pointers, and I/O.
+/// </summary>
 using System;
 using System.Collections.Generic;
 using System.IO;
 
 namespace PascalCompiler;
 
+/// <summary>
+/// Virtual machine for Pascal bytecode execution.
+/// Implements a stack-based architecture with support for all Pascal language features.
+/// </summary>
 public class VirtualMachine
 {
+    /// <summary>Evaluation stack for operands and intermediate results.</summary>
     private readonly Stack<object?> _stack = new();
+
+    /// <summary>Global variable storage (name → value).</summary>
     private readonly Dictionary<string, object?> _variables = new();
+
+    /// <summary>Call stack for function/procedure invocations.</summary>
     private readonly Stack<CallFrame> _callStack = new();
+
+    /// <summary>Simulated heap storage for pointers (address → value).</summary>
     private readonly Dictionary<int, object?> _heap = new();
+
+    /// <summary>File output streams (variable name → writer).</summary>
     private readonly Dictionary<string, StreamWriter> _fileWriters = new();
+
+    /// <summary>File input streams (variable name → reader).</summary>
     private readonly Dictionary<string, StreamReader> _fileReaders = new();
+
+    /// <summary>File path mappings (variable name → filename).</summary>
     private readonly Dictionary<string, string> _fileNames = new();
+
+    /// <summary>Array storage (array name → element storage).</summary>
     private readonly Dictionary<string, Dictionary<int, object?>> _arrays = new();
+
+    /// <summary>Next available heap address for pointer allocation.</summary>
     private int _nextAddress = 1000;
+
+    /// <summary>Current instruction pointer (index into program instructions).</summary>
     private int _instructionPointer;
+
+    /// <summary>The bytecode program being executed.</summary>
     private BytecodeProgram _program = null!;
 
-    // Scope chain for closures: stack of local variable scopes from outer to inner
+    /// <summary>Scope chain for closures (outer to inner scopes).</summary>
     private readonly Stack<Dictionary<string, object?>> _scopeChain = new();
 
+    /// <summary>
+    /// Represents a call frame for function/procedure invocation.
+    /// Stores return address, local variables, and var parameter mappings.
+    /// </summary>
     private class CallFrame
     {
+        /// <summary>Instruction address to return to after call completes.</summary>
         public int ReturnAddress { get; }
+
+        /// <summary>Local variable storage for this call frame.</summary>
         public Dictionary<string, object?> LocalScope { get; }
+
+        /// <summary>Maps var parameter names to their source variable names.</summary>
         public Dictionary<string, string> VarParamMappings { get; }
 
         public CallFrame(int returnAddress, Dictionary<string, object?> localScope, Dictionary<string, string>? varParamMappings = null)

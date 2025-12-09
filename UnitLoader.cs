@@ -1,20 +1,44 @@
+/// <summary>
+/// Loads and parses Pascal unit source files (.pas) with dependency resolution.
+/// Handles circular dependency detection and caching of loaded units.
+/// </summary>
 using System;
 using System.Collections.Generic;
 using System.IO;
 
 namespace PascalCompiler;
 
+/// <summary>
+/// Unit loader for Pascal source files.
+/// Manages unit loading, parsing, and dependency resolution for the interpreter.
+/// </summary>
 public class UnitLoader
 {
+    /// <summary>Cache of already loaded and parsed units.</summary>
     private readonly Dictionary<string, UnitNode> _loadedUnits = new();
-    private readonly HashSet<string> _loadingUnits = new(); // Track units currently being loaded to detect circular dependencies
+
+    /// <summary>Set of units currently being loaded (for circular dependency detection).</summary>
+    private readonly HashSet<string> _loadingUnits = new();
+
+    /// <summary>Directory path to search for unit files.</summary>
     private readonly string _searchPath;
 
+    /// <summary>
+    /// Initializes a new unit loader.
+    /// </summary>
+    /// <param name="searchPath">Directory to search for unit files (default is current directory).</param>
     public UnitLoader(string searchPath = ".")
     {
         _searchPath = searchPath;
     }
 
+    /// <summary>
+    /// Loads and parses a unit by name, handling dependencies recursively.
+    /// Returns cached unit if already loaded.
+    /// </summary>
+    /// <param name="unitName">The name of the unit to load.</param>
+    /// <returns>The parsed UnitNode.</returns>
+    /// <exception cref="Exception">Thrown if unit not found or circular dependency detected.</exception>
     public UnitNode LoadUnit(string unitName)
     {
         string unitNameLower = unitName.ToLower();

@@ -1,5 +1,13 @@
+/// <summary>
+/// Token and TokenType definitions for the Pascal lexical analyzer.
+/// Represents all possible token types in the Pascal language including keywords,
+/// operators, delimiters, literals, and identifiers.
+/// </summary>
 namespace PascalCompiler;
 
+/// <summary>
+/// Enumeration of all token types recognized by the Pascal lexer.
+/// </summary>
 public enum TokenType
 {
     // Keywords
@@ -32,13 +40,39 @@ public enum TokenType
     EOF
 }
 
+/// <summary>
+/// Represents a single token in the Pascal source code.
+/// Contains the token type, lexeme value, and position information for error reporting.
+/// </summary>
 public class Token
 {
+    /// <summary>
+    /// Gets the type of this token.
+    /// </summary>
     public TokenType Type { get; }
+
+    /// <summary>
+    /// Gets the string value (lexeme) of this token.
+    /// </summary>
     public string Value { get; }
+
+    /// <summary>
+    /// Gets the line number where this token appears in the source code (1-based).
+    /// </summary>
     public int Line { get; }
+
+    /// <summary>
+    /// Gets the column number where this token appears in the source code (1-based).
+    /// </summary>
     public int Column { get; }
 
+    /// <summary>
+    /// Initializes a new instance of the Token class.
+    /// </summary>
+    /// <param name="type">The type of the token.</param>
+    /// <param name="value">The string value (lexeme) of the token.</param>
+    /// <param name="line">The line number where the token appears.</param>
+    /// <param name="column">The column number where the token appears.</param>
     public Token(TokenType type, string value, int line, int column)
     {
         Type = type;
@@ -47,5 +81,9 @@ public class Token
         Column = column;
     }
 
+    /// <summary>
+    /// Returns a string representation of the token for debugging purposes.
+    /// </summary>
+    /// <returns>A string in the format "Token(Type, 'Value', Line:Column)".</returns>
     public override string ToString() => $"Token({Type}, '{Value}', {Line}:{Column})";
 }

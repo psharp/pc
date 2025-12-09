@@ -1,3 +1,8 @@
+/// <summary>
+/// Direct interpreter for Pascal programs.
+/// Executes programs by walking the AST and evaluating nodes directly.
+/// Supports all Pascal features including units, closures, pointers, files, and sets.
+/// </summary>
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -5,25 +10,58 @@ using System.Linq;
 
 namespace PascalCompiler;
 
+/// <summary>
+/// Tree-walking interpreter for Pascal programs.
+/// Provides direct execution of AST nodes without compilation.
+/// </summary>
 public class Interpreter
 {
+    /// <summary>Maps variable names to their runtime values.</summary>
     private readonly Dictionary<string, object?> _variables = new();
-    private readonly Dictionary<string, Dictionary<int, object?>> _arrays = new();
-    private readonly Dictionary<string, ArrayTypeNode> _arrayTypes = new(); // Track array metadata
-    private readonly Dictionary<string, Dictionary<string, object?>> _records = new();
-    private readonly Dictionary<string, RecordTypeNode> _recordTypes = new();
-    private readonly Dictionary<string, EnumTypeNode> _enumTypes = new();
-    private readonly Dictionary<string, int> _enumValues = new(); // maps enum value name to ordinal
-    private readonly Dictionary<string, HashSet<object>> _sets = new(); // maps set variable name to HashSet
-    private readonly Dictionary<string, ProcedureDeclarationNode> _procedures = new();
-    private readonly Dictionary<string, FunctionDeclarationNode> _functions = new();
-    private readonly Dictionary<string, StreamWriter> _fileWriters = new();
-    private readonly Dictionary<string, StreamReader> _fileReaders = new();
-    private readonly Dictionary<string, string> _fileNames = new();
-    private readonly Dictionary<int, object?> _heap = new(); // Simulated heap for pointers
-    private int _nextAddress = 1000; // Start heap addresses at 1000
 
-    // Scope chain for closures: stack of variable scopes from outer to inner
+    /// <summary>Maps array names to their element storage (linear index → value).</summary>
+    private readonly Dictionary<string, Dictionary<int, object?>> _arrays = new();
+
+    /// <summary>Maps array names to their type metadata (dimensions, bounds).</summary>
+    private readonly Dictionary<string, ArrayTypeNode> _arrayTypes = new();
+
+    /// <summary>Maps record variable names to their field storage (field name → value).</summary>
+    private readonly Dictionary<string, Dictionary<string, object?>> _records = new();
+
+    /// <summary>Maps record type names to their definitions.</summary>
+    private readonly Dictionary<string, RecordTypeNode> _recordTypes = new();
+
+    /// <summary>Maps enumeration type names to their definitions.</summary>
+    private readonly Dictionary<string, EnumTypeNode> _enumTypes = new();
+
+    /// <summary>Maps enumeration value names to their ordinal numbers.</summary>
+    private readonly Dictionary<string, int> _enumValues = new();
+
+    /// <summary>Maps set variable names to their element storage.</summary>
+    private readonly Dictionary<string, HashSet<object>> _sets = new();
+
+    /// <summary>Maps procedure names to their declarations.</summary>
+    private readonly Dictionary<string, ProcedureDeclarationNode> _procedures = new();
+
+    /// <summary>Maps function names to their declarations.</summary>
+    private readonly Dictionary<string, FunctionDeclarationNode> _functions = new();
+
+    /// <summary>Maps file variable names to their output streams.</summary>
+    private readonly Dictionary<string, StreamWriter> _fileWriters = new();
+
+    /// <summary>Maps file variable names to their input streams.</summary>
+    private readonly Dictionary<string, StreamReader> _fileReaders = new();
+
+    /// <summary>Maps file variable names to their filenames.</summary>
+    private readonly Dictionary<string, string> _fileNames = new();
+
+    /// <summary>Simulated heap storage for pointer values (address → value).</summary>
+    private readonly Dictionary<int, object?> _heap = new();
+
+    /// <summary>Next available heap address for pointer allocation.</summary>
+    private int _nextAddress = 1000;
+
+    /// <summary>Scope chain for closures (outer to inner scopes).</summary>
     private readonly Stack<Dictionary<string, object?>> _scopeChain = new();
 
     public void Execute(ProgramNode program, UnitLoader? unitLoader = null)

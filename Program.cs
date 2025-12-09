@@ -1,10 +1,23 @@
+/// <summary>
+/// Main entry point and command-line interface for the Pascal compiler.
+/// Supports interpretation, bytecode compilation, and execution of Pascal programs and units.
+/// </summary>
 using System;
 using System.IO;
 
 namespace PascalCompiler;
 
+/// <summary>
+/// Command-line interface for the Pascal compiler and virtual machine.
+/// Provides options for interpretation, compilation, execution, and debugging.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Main entry point for the Pascal compiler application.
+    /// Parses command-line arguments and dispatches to appropriate handlers.
+    /// </summary>
+    /// <param name="args">Command-line arguments.</param>
     static void Main(string[] args)
     {
         bool debugMode = false;
