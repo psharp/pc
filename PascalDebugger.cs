@@ -1,16 +1,37 @@
+/// <summary>
+/// Interactive step-through debugger for Pascal programs.
+/// Provides breakpoints, variable inspection, and statement-by-statement execution.
+/// Enables debugging Pascal programs without full IDE support.
+/// </summary>
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace PascalCompiler;
 
+/// <summary>
+/// Interactive debugger for Pascal programs.
+/// Allows step-by-step execution with breakpoints and variable inspection.
+/// </summary>
 public class PascalDebugger
 {
+    /// <summary>Runtime variable storage (name → value).</summary>
     private readonly Dictionary<string, object?> _variables = new();
+
+    /// <summary>Whether debugger is in step mode (pausing at each statement).</summary>
     private bool _stepMode = true;
+
+    /// <summary>Current logical line number being executed.</summary>
     private int _currentLine = 0;
+
+    /// <summary>Set of line numbers where execution should pause.</summary>
     private readonly HashSet<int> _breakpoints = new();
 
+    /// <summary>
+    /// Executes a Pascal program in interactive debug mode.
+    /// Displays help text, initializes variables, and starts step-by-step execution.
+    /// </summary>
+    /// <param name="program">The program AST to debug.</param>
     public void Execute(ProgramNode program)
     {
         Console.WriteLine("\n=== Pascal Debugger ===");
@@ -48,6 +69,11 @@ public class PascalDebugger
         }
     }
 
+    /// <summary>
+    /// Returns the default value for a given Pascal type.
+    /// </summary>
+    /// <param name="type">The type name (integer, real, string, boolean).</param>
+    /// <returns>The default value for the type.</returns>
     private object? GetDefaultValue(string type)
     {
         return type.ToLower() switch
@@ -60,6 +86,10 @@ public class PascalDebugger
         };
     }
 
+    /// <summary>
+    /// Executes a block of statements sequentially.
+    /// </summary>
+    /// <param name="block">The block node containing statements.</param>
     private void ExecuteBlock(BlockNode block)
     {
         foreach (var statement in block.Statements)
@@ -68,6 +98,12 @@ public class PascalDebugger
         }
     }
 
+    /// <summary>
+    /// Waits for user debug commands before executing the next statement.
+    /// Handles breakpoints and step mode to control execution flow.
+    /// </summary>
+    /// <param name="currentStatement">Description of the statement about to execute.</param>
+    /// <exception cref="QuitDebuggingException">Thrown when user quits debugging.</exception>
     private void WaitForDebugCommand(string currentStatement)
     {
         _currentLine++;
@@ -176,6 +212,9 @@ public class PascalDebugger
         }
     }
 
+    /// <summary>
+    /// Displays all variables and their current values.
+    /// </summary>
     private void ViewAllVariables()
     {
         Console.WriteLine("\nVariables:");
@@ -185,6 +224,10 @@ public class PascalDebugger
         }
     }
 
+    /// <summary>
+    /// Displays a specific variable's current value.
+    /// </summary>
+    /// <param name="name">The variable name to display.</param>
     private void ViewVariable(string name)
     {
         string varName = name.ToLower();
@@ -198,6 +241,12 @@ public class PascalDebugger
         }
     }
 
+    /// <summary>
+    /// Formats a value for display in the debugger.
+    /// Wraps strings in quotes, handles null values.
+    /// </summary>
+    /// <param name="value">The value to format.</param>
+    /// <returns>Formatted string representation.</returns>
     private string FormatValue(object? value)
     {
         if (value == null) return "null";
@@ -205,6 +254,11 @@ public class PascalDebugger
         return value.ToString() ?? "null";
     }
 
+    /// <summary>
+    /// Executes a single statement and displays its effects.
+    /// Supports assignments, conditionals, loops, I/O, and compound statements.
+    /// </summary>
+    /// <param name="statement">The statement node to execute.</param>
     private void ExecuteStatement(StatementNode statement)
     {
         string description = GetStatementDescription(statement);
@@ -301,6 +355,11 @@ public class PascalDebugger
         }
     }
 
+    /// <summary>
+    /// Generates a human-readable description of a statement for display.
+    /// </summary>
+    /// <param name="statement">The statement to describe.</param>
+    /// <returns>String description of the statement.</returns>
     private string GetStatementDescription(StatementNode statement)
     {
         return statement switch
@@ -316,6 +375,11 @@ public class PascalDebugger
         };
     }
 
+    /// <summary>
+    /// Converts an expression AST node to a readable string representation.
+    /// </summary>
+    /// <param name="expr">The expression node.</param>
+    /// <returns>String representation of the expression.</returns>
     private string GetExpressionString(ExpressionNode expr)
     {
         return expr switch
@@ -377,6 +441,13 @@ public class PascalDebugger
         return value != null;
     }
 
+    /// <summary>
+    /// Evaluates an expression AST node to produce a runtime value.
+    /// Supports literals, variables, binary operations, and unary operations.
+    /// </summary>
+    /// <param name="expression">The expression node to evaluate.</param>
+    /// <returns>The computed value.</returns>
+    /// <exception cref="Exception">Thrown if variable not found or unknown expression type.</exception>
     private object? EvaluateExpression(ExpressionNode expression)
     {
         switch (expression)
@@ -506,6 +577,10 @@ public class PascalDebugger
     }
 }
 
+/// <summary>
+/// Exception thrown when user quits the debugger.
+/// Used to exit the debugging session cleanly.
+/// </summary>
 public class QuitDebuggingException : Exception
 {
 }
