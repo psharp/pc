@@ -369,7 +369,24 @@ public class Interpreter
                 {
                     for (int i = start; i >= end; i--)
                     {
-                        _variables[varName] = i;
+                        // Try to assign to a variable in the scope chain
+                        bool assignedInScope = false;
+                        foreach (var scope in _scopeChain)
+                        {
+                            if (scope.ContainsKey(varName))
+                            {
+                                scope[varName] = i;
+                                assignedInScope = true;
+                                break;
+                            }
+                        }
+
+                        // If not found in scope chain, assign to global scope
+                        if (!assignedInScope)
+                        {
+                            _variables[varName] = i;
+                        }
+
                         ExecuteStatement(forNode.Body);
                     }
                 }
@@ -377,7 +394,24 @@ public class Interpreter
                 {
                     for (int i = start; i <= end; i++)
                     {
-                        _variables[varName] = i;
+                        // Try to assign to a variable in the scope chain
+                        bool assignedInScope = false;
+                        foreach (var scope in _scopeChain)
+                        {
+                            if (scope.ContainsKey(varName))
+                            {
+                                scope[varName] = i;
+                                assignedInScope = true;
+                                break;
+                            }
+                        }
+
+                        // If not found in scope chain, assign to global scope
+                        if (!assignedInScope)
+                        {
+                            _variables[varName] = i;
+                        }
+
                         ExecuteStatement(forNode.Body);
                     }
                 }

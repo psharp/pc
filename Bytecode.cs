@@ -203,8 +203,9 @@ public class FunctionInfo
     public List<string> ParameterNames { get; }
     public List<bool> ParameterIsVar { get; }
     public string? ReturnType { get; }
+    public List<string> LocalVariableNames { get; }
 
-    public FunctionInfo(string name, int address, int parameterCount, List<string> parameterNames, string? returnType = null, List<bool>? parameterIsVar = null)
+    public FunctionInfo(string name, int address, int parameterCount, List<string> parameterNames, string? returnType = null, List<bool>? parameterIsVar = null, List<string>? localVariableNames = null)
     {
         Name = name;
         Address = address;
@@ -212,6 +213,7 @@ public class FunctionInfo
         ParameterNames = parameterNames;
         ReturnType = returnType;
         ParameterIsVar = parameterIsVar ?? new List<bool>(new bool[parameterCount]);
+        LocalVariableNames = localVariableNames ?? new List<string>();
     }
 }
 

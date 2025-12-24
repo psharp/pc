@@ -289,13 +289,24 @@ public class BytecodeCompiler
             }
         }
 
+        // Collect local variable names
+        var localVarNames = new List<string>();
+        foreach (var varDecl in procedure.LocalVariables)
+        {
+            foreach (var name in varDecl.Names)
+            {
+                localVarNames.Add(name.ToLower());
+            }
+        }
+
         _program.Functions[procedure.Name.ToLower()] = new FunctionInfo(
             procedure.Name,
             _program.GetCurrentAddress(),
             paramCount,
             paramNames,
             null,
-            paramIsVar
+            paramIsVar,
+            localVarNames
         );
 
         // Add parameters and local variables
@@ -355,13 +366,24 @@ public class BytecodeCompiler
             }
         }
 
+        // Collect local variable names
+        var localVarNames = new List<string>();
+        foreach (var varDecl in function.LocalVariables)
+        {
+            foreach (var name in varDecl.Names)
+            {
+                localVarNames.Add(name.ToLower());
+            }
+        }
+
         _program.Functions[function.Name.ToLower()] = new FunctionInfo(
             function.Name,
             _program.GetCurrentAddress(),
             paramCount,
             paramNames,
             function.ReturnType,
-            paramIsVar
+            paramIsVar,
+            localVarNames
         );
 
         // Add function name as variable for return value

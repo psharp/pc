@@ -4,8 +4,8 @@ var
 
 procedure Greet(name : string);
 begin
-    writeln('Hello, ');
-    writeln(name);
+    write('Hello, ');
+    write(name);
     writeln('!')
 end;
 
@@ -13,14 +13,14 @@ procedure Swap(a, b : integer);
 var
     temp : integer;
 begin
-    writeln('Before swap: a = ');
+    write('Before swap: a = ');
     write(a);
     write(', b = ');
     writeln(b);
     temp := a;
     a := b;
     b := temp;
-    writeln('After swap: a = ');
+    write('After swap: a = ');
     write(a);
     write(', b = ');
     writeln(b)
@@ -37,6 +37,7 @@ begin
 end;
 
 function Factorial(n : integer) : integer;
+{ This cannot be working! }
 var
     i : integer;
 begin
@@ -57,16 +58,15 @@ begin
     writeln();
 
     result := Add(3, 7);
-    writeln('3 + 7 = ');
+    write('3 + 7 = ');
     writeln(result);
-    writeln();
 
     result := Multiply(4, 6);
-    writeln('4 * 6 = ');
-    writeln(result);
+    write('4 * 6 = ');
+    write(result);
     writeln();
 
     result := Factorial(5);
-    writeln('5! = ');
-    writeln(result)
+    write('5! = ');
+    write(result)
 end.

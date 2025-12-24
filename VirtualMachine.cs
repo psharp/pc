@@ -566,6 +566,18 @@ public class VirtualMachine
                             }
                         }
 
+                        // Initialize local variables with default values
+                        foreach (var localVarName in funcInfo.LocalVariableNames)
+                        {
+                            localScope[localVarName] = 0; // Default to 0 for now (works for integers)
+                        }
+
+                        // If this is a function (has return type), initialize the return value variable
+                        if (funcInfo.ReturnType != null)
+                        {
+                            localScope[funcName] = 0; // Initialize function result variable
+                        }
+
                         // Create call frame with local scope
                         _callStack.Push(new CallFrame(_instructionPointer + 1, localScope, varParamMappings));
 
