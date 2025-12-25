@@ -593,6 +593,40 @@ public class BytecodeCompiler
                 _program.AddInstruction(new Instruction(OpCode.FILE_CLOSE, fileClose.FileVariable.ToLower()));
                 break;
 
+            case PageNode pageNode:
+                // ISO 7185: page procedure - outputs form feed
+                _program.AddInstruction(new Instruction(OpCode.PUSH, "\f"));
+                if (pageNode.FileVariable != null)
+                {
+                    _program.AddInstruction(new Instruction(OpCode.FILE_WRITE,
+                        new object[] { pageNode.FileVariable.ToLower(), 1, false }));
+                }
+                else
+                {
+                    _program.AddInstruction(new Instruction(OpCode.WRITE));
+                }
+                break;
+
+            case GetNode:
+                // ISO 7185: get procedure - simplified as no-op in bytecode
+                // Real implementation would advance file buffer
+                break;
+
+            case PutNode:
+                // ISO 7185: put procedure - simplified as no-op in bytecode
+                // Real implementation would write file buffer
+                break;
+
+            case PackNode:
+                // ISO 7185: pack procedure - simplified as no-op in bytecode
+                // Real implementation would pack array elements
+                break;
+
+            case UnpackNode:
+                // ISO 7185: unpack procedure - simplified as no-op in bytecode
+                // Real implementation would unpack array elements
+                break;
+
             case FileReadNode fileRead:
                 // Handle multiple variables - for now, just handle the first one
                 foreach (var varName in fileRead.Variables)

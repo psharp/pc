@@ -238,6 +238,21 @@ public class Parser
             case TokenType.CLOSE:
                 return ParseFileClose();
 
+            case TokenType.PAGE:
+                return ParsePage();
+
+            case TokenType.GET:
+                return ParseGet();
+
+            case TokenType.PUT:
+                return ParsePut();
+
+            case TokenType.PACK:
+                return ParsePack();
+
+            case TokenType.UNPACK:
+                return ParseUnpack();
+
             case TokenType.NEW:
                 return ParseNew();
 
@@ -1344,6 +1359,85 @@ public class Parser
         Expect(TokenType.IDENTIFIER);
         Expect(TokenType.RPAREN);
         return new FileCloseNode(fileVar);
+    }
+
+    // Parse Page or Page(f) - ISO 7185
+    private StatementNode ParsePage()
+    {
+        Expect(TokenType.PAGE);
+        string? fileVar = null;
+
+        if (_currentToken.Type == TokenType.LPAREN)
+        {
+            Advance();
+            fileVar = _currentToken.Value;
+            Expect(TokenType.IDENTIFIER);
+            Expect(TokenType.RPAREN);
+        }
+
+        return new PageNode(fileVar);
+    }
+
+    // Parse Get(f) - ISO 7185
+    private StatementNode ParseGet()
+    {
+        Expect(TokenType.GET);
+        Expect(TokenType.LPAREN);
+        string fileVar = _currentToken.Value;
+        Expect(TokenType.IDENTIFIER);
+        Expect(TokenType.RPAREN);
+        return new GetNode(fileVar);
+    }
+
+    // Parse Put(f) - ISO 7185
+    private StatementNode ParsePut()
+    {
+        Expect(TokenType.PUT);
+        Expect(TokenType.LPAREN);
+        string fileVar = _currentToken.Value;
+        Expect(TokenType.IDENTIFIER);
+        Expect(TokenType.RPAREN);
+        return new PutNode(fileVar);
+    }
+
+    // Parse Pack(unpacked, index, packed) - ISO 7185
+    private StatementNode ParsePack()
+    {
+        Expect(TokenType.PACK);
+        Expect(TokenType.LPAREN);
+
+        string unpackedArray = _currentToken.Value;
+        Expect(TokenType.IDENTIFIER);
+        Expect(TokenType.COMMA);
+
+        ExpressionNode startIndex = ParseExpression();
+        Expect(TokenType.COMMA);
+
+        string packedArray = _currentToken.Value;
+        Expect(TokenType.IDENTIFIER);
+        Expect(TokenType.RPAREN);
+
+        return new PackNode(unpackedArray, startIndex, packedArray);
+    }
+
+    // Parse Unpack(packed, unpacked, index) - ISO 7185
+    private StatementNode ParseUnpack()
+    {
+        Expect(TokenType.UNPACK);
+        Expect(TokenType.LPAREN);
+
+        string packedArray = _currentToken.Value;
+        Expect(TokenType.IDENTIFIER);
+        Expect(TokenType.COMMA);
+
+        string unpackedArray = _currentToken.Value;
+        Expect(TokenType.IDENTIFIER);
+        Expect(TokenType.COMMA);
+
+        ExpressionNode startIndex = ParseExpression();
+        Expect(TokenType.RPAREN);
+
+        return new UnpackNode(packedArray, unpackedArray, startIndex);
     }
 
     // Parse New(ptr)

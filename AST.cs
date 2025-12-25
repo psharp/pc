@@ -840,6 +840,80 @@ public class FileEofNode : ExpressionNode
     }
 }
 
+// Page procedure - outputs form feed character (ISO 7185)
+public class PageNode : StatementNode
+{
+    public string? FileVariable { get; }
+
+    public PageNode(string? fileVariable = null)
+    {
+        FileVariable = fileVariable;
+    }
+}
+
+// Get procedure - advances file buffer (ISO 7185)
+public class GetNode : StatementNode
+{
+    public string FileVariable { get; }
+
+    public GetNode(string fileVariable)
+    {
+        FileVariable = fileVariable;
+    }
+}
+
+// Put procedure - writes file buffer (ISO 7185)
+public class PutNode : StatementNode
+{
+    public string FileVariable { get; }
+
+    public PutNode(string fileVariable)
+    {
+        FileVariable = fileVariable;
+    }
+}
+
+// Pack procedure - packs unpacked array into packed array (ISO 7185)
+public class PackNode : StatementNode
+{
+    public string UnpackedArray { get; }
+    public ExpressionNode StartIndex { get; }
+    public string PackedArray { get; }
+
+    public PackNode(string unpackedArray, ExpressionNode startIndex, string packedArray)
+    {
+        UnpackedArray = unpackedArray;
+        StartIndex = startIndex;
+        PackedArray = packedArray;
+    }
+}
+
+// Unpack procedure - unpacks packed array into unpacked array (ISO 7185)
+public class UnpackNode : StatementNode
+{
+    public string PackedArray { get; }
+    public string UnpackedArray { get; }
+    public ExpressionNode StartIndex { get; }
+
+    public UnpackNode(string packedArray, string unpackedArray, ExpressionNode startIndex)
+    {
+        PackedArray = packedArray;
+        UnpackedArray = unpackedArray;
+        StartIndex = startIndex;
+    }
+}
+
+// File buffer variable access (e.g., f^) (ISO 7185)
+public class FileBufferNode : ExpressionNode
+{
+    public string FileVariable { get; }
+
+    public FileBufferNode(string fileVariable)
+    {
+        FileVariable = fileVariable;
+    }
+}
+
 // Pointer variable declaration (e.g., ptr : ^integer)
 public class PointerVarDeclarationNode : ASTNode
 {

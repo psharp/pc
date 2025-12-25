@@ -661,6 +661,40 @@ public class SemanticAnalyzer
                 }
                 break;
 
+            case PageNode pageNode:
+                // ISO 7185: page procedure - optional file parameter
+                if (pageNode.FileVariable != null && !_fileVariables.ContainsKey(pageNode.FileVariable.ToLower()))
+                {
+                    _errors.Add($"File variable '{pageNode.FileVariable}' is not declared");
+                }
+                break;
+
+            case GetNode getNode:
+                // ISO 7185: get procedure
+                if (!_fileVariables.ContainsKey(getNode.FileVariable.ToLower()))
+                {
+                    _errors.Add($"File variable '{getNode.FileVariable}' is not declared");
+                }
+                break;
+
+            case PutNode putNode:
+                // ISO 7185: put procedure
+                if (!_fileVariables.ContainsKey(putNode.FileVariable.ToLower()))
+                {
+                    _errors.Add($"File variable '{putNode.FileVariable}' is not declared");
+                }
+                break;
+
+            case PackNode packNode:
+                // ISO 7185: pack procedure - check arrays exist
+                AnalyzeExpression(packNode.StartIndex);
+                break;
+
+            case UnpackNode unpackNode:
+                // ISO 7185: unpack procedure - check arrays exist
+                AnalyzeExpression(unpackNode.StartIndex);
+                break;
+
             case FileReadNode fileRead:
                 if (!_fileVariables.ContainsKey(fileRead.FileVariable.ToLower()))
                 {

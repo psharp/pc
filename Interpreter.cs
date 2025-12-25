@@ -558,6 +558,52 @@ public class Interpreter
                 }
                 break;
 
+            case PageNode pageNode:
+                // ISO 7185: page procedure outputs form feed character
+                if (pageNode.FileVariable != null)
+                {
+                    string pageFileVar = pageNode.FileVariable.ToLower();
+                    if (_fileWriters.ContainsKey(pageFileVar))
+                    {
+                        _fileWriters[pageFileVar].Write('\f');  // Form feed
+                    }
+                }
+                else
+                {
+                    Console.Write('\f');  // Form feed to stdout
+                }
+                break;
+
+            case GetNode getNode:
+                // ISO 7185: get procedure - advance file buffer (simplified: read next line)
+                string getFileVar = getNode.FileVariable.ToLower();
+                if (_fileReaders.ContainsKey(getFileVar))
+                {
+                    _fileReaders[getFileVar].ReadLine();  // Advance buffer
+                }
+                break;
+
+            case PutNode putNode:
+                // ISO 7185: put procedure - write file buffer (simplified: flush)
+                string putFileVar = putNode.FileVariable.ToLower();
+                if (_fileWriters.ContainsKey(putFileVar))
+                {
+                    _fileWriters[putFileVar].Flush();
+                }
+                break;
+
+            case PackNode packNode:
+                // ISO 7185: pack procedure - copies elements from unpacked array to packed array
+                // Simplified: just copy array elements starting from index
+                ExecutePackProcedure(packNode);
+                break;
+
+            case UnpackNode unpackNode:
+                // ISO 7185: unpack procedure - copies elements from packed array to unpacked array
+                // Simplified: just copy array elements starting from index
+                ExecuteUnpackProcedure(unpackNode);
+                break;
+
             case FileReadNode fileRead:
                 string readFileVar = fileRead.FileVariable.ToLower();
                 if (_fileReaders.ContainsKey(readFileVar))
@@ -1526,6 +1572,59 @@ public class Interpreter
         {
             // Pop the with scope
             _scopeChain.Pop();
+        }
+    }
+
+    private void ExecutePackProcedure(PackNode packNode)
+    {
+        // ISO 7185: pack(unpacked, index, packed)
+        // Copies elements from unpacked array to packed array starting at index
+        string unpackedName = packNode.UnpackedArray.ToLower();
+        string packedName = packNode.PackedArray.ToLower();
+        int startIndex = Convert.ToInt32(EvaluateExpression(packNode.StartIndex));
+
+        if (!_arrays.ContainsKey(unpackedName) || !_arrays.ContainsKey(packedName))
+        {
+            return; // Arrays not found
+        }
+
+        var unpackedArray = _arrays[unpackedName];
+        var packedArray = _arrays[packedName];
+
+        // Copy all elements from unpacked to packed
+        int packedIndex = 0;
+        foreach (var kvp in unpackedArray.OrderBy(x => x.Key))
+        {
+            if (kvp.Key >= startIndex)
+            {
+                packedArray[packedIndex] = kvp.Value;
+                packedIndex++;
+            }
+        }
+    }
+
+    private void ExecuteUnpackProcedure(UnpackNode unpackNode)
+    {
+        // ISO 7185: unpack(packed, unpacked, index)
+        // Copies elements from packed array to unpacked array starting at index
+        string packedName = unpackNode.PackedArray.ToLower();
+        string unpackedName = unpackNode.UnpackedArray.ToLower();
+        int startIndex = Convert.ToInt32(EvaluateExpression(unpackNode.StartIndex));
+
+        if (!_arrays.ContainsKey(packedName) || !_arrays.ContainsKey(unpackedName))
+        {
+            return; // Arrays not found
+        }
+
+        var packedArray = _arrays[packedName];
+        var unpackedArray = _arrays[unpackedName];
+
+        // Copy all elements from packed to unpacked
+        int unpackedIndex = startIndex;
+        foreach (var kvp in packedArray.OrderBy(x => x.Key))
+        {
+            unpackedArray[unpackedIndex] = kvp.Value;
+            unpackedIndex++;
         }
     }
 }
