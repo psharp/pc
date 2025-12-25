@@ -504,8 +504,31 @@ public class BytecodeCompiler
                 CompileIfStatement(ifNode);
                 break;
 
+            case CaseNode caseNode:
+                CompileCaseStatement(caseNode);
+                break;
+
             case WhileNode whileNode:
                 CompileWhileStatement(whileNode);
+                break;
+
+            case RepeatUntilNode repeatUntilNode:
+                CompileRepeatUntilStatement(repeatUntilNode);
+                break;
+
+            case WithNode withNode:
+                // With statement is simplified in bytecode - just execute the inner statement
+                // The scope management is handled at runtime
+                CompileStatement(withNode.Statement);
+                break;
+
+            case GotoNode gotoNode:
+                _program.AddInstruction(new Instruction(OpCode.JUMP, gotoNode.Label));
+                break;
+
+            case LabeledStatementNode labeledStmt:
+                _program.AddLabel(labeledStmt.Label);
+                CompileStatement(labeledStmt.Statement);
                 break;
 
             case ForNode forNode:
@@ -610,6 +633,80 @@ public class BytecodeCompiler
         _program.AddLabel(endLabel);
     }
 
+    private void CompileCaseStatement(CaseNode caseNode)
+    {
+        string endLabel = GenerateLabel("case_end");
+        var branchLabels = new List<string>();
+
+        // Generate labels for each branch
+        for (int i = 0; i < caseNode.Branches.Count; i++)
+        {
+            branchLabels.Add(GenerateLabel($"case_branch_{i}"));
+        }
+
+        string elseLabel = caseNode.ElseBranch != null ? GenerateLabel("case_else") : endLabel;
+
+        // Compile the case expression once
+        CompileExpression(caseNode.Expression);
+
+        // For each branch, check if any label matches
+        for (int i = 0; i < caseNode.Branches.Count; i++)
+        {
+            var branch = caseNode.Branches[i];
+
+            foreach (var label in branch.Labels)
+            {
+                // Duplicate the case value for comparison
+                _program.AddInstruction(new Instruction(OpCode.DUP));
+
+                if (label.IsRange)
+                {
+                    // For ranges, compile both bounds and check if value is in range
+                    _program.AddInstruction(new Instruction(OpCode.DUP)); // Dup again for second comparison
+                    CompileExpression(label.StartValue);
+                    _program.AddInstruction(new Instruction(OpCode.GE)); // value >= start
+
+                    _program.AddInstruction(new Instruction(OpCode.DUP, 2)); // Get case value again
+                    CompileExpression(label.EndValue!);
+                    _program.AddInstruction(new Instruction(OpCode.LE)); // value <= end
+
+                    _program.AddInstruction(new Instruction(OpCode.AND)); // Both conditions must be true
+
+                    _program.AddInstruction(new Instruction(OpCode.JUMP_IF_TRUE, branchLabels[i]));
+                }
+                else
+                {
+                    // For single values, simple equality check
+                    CompileExpression(label.StartValue);
+                    _program.AddInstruction(new Instruction(OpCode.EQ));
+                    _program.AddInstruction(new Instruction(OpCode.JUMP_IF_TRUE, branchLabels[i]));
+                }
+            }
+        }
+
+        // No match found, pop the case value and jump to else or end
+        _program.AddInstruction(new Instruction(OpCode.POP));
+        _program.AddInstruction(new Instruction(OpCode.JUMP, elseLabel));
+
+        // Compile each branch
+        for (int i = 0; i < caseNode.Branches.Count; i++)
+        {
+            _program.AddLabel(branchLabels[i]);
+            _program.AddInstruction(new Instruction(OpCode.POP)); // Pop the case value
+            CompileStatement(caseNode.Branches[i].Statement);
+            _program.AddInstruction(new Instruction(OpCode.JUMP, endLabel));
+        }
+
+        // Compile else branch if present
+        if (caseNode.ElseBranch != null)
+        {
+            _program.AddLabel(elseLabel);
+            CompileStatement(caseNode.ElseBranch);
+        }
+
+        _program.AddLabel(endLabel);
+    }
+
     private void CompileWhileStatement(WhileNode whileNode)
     {
         string startLabel = GenerateLabel("while_start");
@@ -623,6 +720,23 @@ public class BytecodeCompiler
         _program.AddInstruction(new Instruction(OpCode.JUMP, startLabel));
 
         _program.AddLabel(endLabel);
+    }
+
+    private void CompileRepeatUntilStatement(RepeatUntilNode repeatUntilNode)
+    {
+        string startLabel = GenerateLabel("repeat_start");
+
+        _program.AddLabel(startLabel);
+
+        // Execute all statements in the body
+        foreach (var stmt in repeatUntilNode.Statements)
+        {
+            CompileStatement(stmt);
+        }
+
+        // Check the condition - loop continues while condition is false
+        CompileExpression(repeatUntilNode.Condition);
+        _program.AddInstruction(new Instruction(OpCode.JUMP_IF_FALSE, startLabel));
     }
 
     private void CompileForStatement(ForNode forNode)
@@ -714,9 +828,52 @@ public class BytecodeCompiler
                 break;
 
             case FunctionCallNode funcCall:
-                // Look up function info to check which parameters are var
+                // Check if it's a built-in function
                 string funcName = funcCall.Name.ToLower();
-                if (_program.Functions.TryGetValue(funcName, out var funcInfo))
+                if (IsBuiltInMathFunction(funcName))
+                {
+                    // Compile arguments (push them onto stack)
+                    foreach (var arg in funcCall.Arguments)
+                    {
+                        CompileExpression(arg);
+                    }
+
+                    // Emit the corresponding opcode
+                    OpCode builtInOpCode = funcName switch
+                    {
+                        "abs" => OpCode.ABS,
+                        "sqr" => OpCode.SQR,
+                        "sqrt" => OpCode.SQRT,
+                        "sin" => OpCode.SIN,
+                        "cos" => OpCode.COS,
+                        "arctan" => OpCode.ARCTAN,
+                        "ln" => OpCode.LN,
+                        "exp" => OpCode.EXP,
+                        "trunc" => OpCode.TRUNC,
+                        "round" => OpCode.ROUND,
+                        "odd" => OpCode.ODD,
+                        "length" => OpCode.LENGTH,
+                        "copy" => OpCode.COPY,
+                        "pos" => OpCode.POS,
+                        "upcase" => OpCode.UPCASE,
+                        "lowercase" => OpCode.LOWERCASE,
+                        "chr" => OpCode.CHR,
+                        "ord" => OpCode.ORD,
+                        "concat" => OpCode.CONCAT,
+                        _ => throw new Exception($"Unknown built-in function: {funcName}")
+                    };
+
+                    // For CONCAT, pass the argument count as operand
+                    if (funcName == "concat")
+                    {
+                        _program.AddInstruction(new Instruction(builtInOpCode, funcCall.Arguments.Count));
+                    }
+                    else
+                    {
+                        _program.AddInstruction(new Instruction(builtInOpCode));
+                    }
+                }
+                else if (_program.Functions.TryGetValue(funcName, out var funcInfo))
                 {
                     // Push arguments
                     for (int i = 0; i < funcCall.Arguments.Count; i++)
@@ -740,6 +897,7 @@ public class BytecodeCompiler
                             CompileExpression(funcCall.Arguments[i]);
                         }
                     }
+                    _program.AddInstruction(new Instruction(OpCode.CALL, funcCall.Name.ToLower()));
                 }
                 else
                 {
@@ -748,8 +906,8 @@ public class BytecodeCompiler
                     {
                         CompileExpression(arg);
                     }
+                    _program.AddInstruction(new Instruction(OpCode.CALL, funcCall.Name.ToLower()));
                 }
-                _program.AddInstruction(new Instruction(OpCode.CALL, funcCall.Name.ToLower()));
                 break;
 
             case BinaryOpNode binary:
@@ -883,5 +1041,17 @@ public class BytecodeCompiler
             }
         }
         return null;
+    }
+
+    private bool IsBuiltInMathFunction(string funcName)
+    {
+        return funcName switch
+        {
+            "abs" or "sqr" or "sqrt" or "sin" or "cos" or "arctan" or
+            "ln" or "exp" or "trunc" or "round" or "odd" or
+            "length" or "copy" or "concat" or "pos" or "upcase" or
+            "lowercase" or "chr" or "ord" => true,
+            _ => false
+        };
     }
 }

@@ -48,6 +48,8 @@ public enum OpCode : byte
     JUMP,           // Unconditional jump
     JUMP_IF_FALSE,  // Jump if top of stack is false
     JUMP_IF_TRUE,   // Jump if top of stack is true
+    CASE_JUMP,      // Jump table for case statement (operand = branch count)
+    CASE_RANGE,     // Check if value is in range (used for case ranges)
 
     // Function/Procedure operations
     CALL,           // Call function/procedure
@@ -82,6 +84,29 @@ public enum OpCode : byte
     // Array operations
     ARRAY_LOAD,     // Load array element: arr[i] or arr[i,j] (pops indices, pushes value)
     ARRAY_STORE,    // Store array element: arr[i] := val (pops value and indices)
+
+    // Math functions
+    ABS,            // Absolute value
+    SQR,            // Square
+    SQRT,           // Square root
+    SIN,            // Sine
+    COS,            // Cosine
+    ARCTAN,         // Arctangent
+    LN,             // Natural logarithm
+    EXP,            // Exponential
+    TRUNC,          // Truncate to integer
+    ROUND,          // Round to nearest integer
+    ODD,            // Check if odd
+
+    // String functions
+    LENGTH,         // String length
+    COPY,           // Copy substring (3 params: str, start, count)
+    CONCAT,         // Concatenate strings (operand = count of strings on stack)
+    POS,            // Find substring position (2 params: substr, str)
+    UPCASE,         // Convert to uppercase
+    LOWERCASE,      // Convert to lowercase
+    CHR,            // Convert integer to character
+    ORD,            // Convert character to integer (ASCII value)
 
     // Special
     HALT,           // Stop execution

@@ -29,9 +29,13 @@ A Pascal compiler written in C# that includes a lexer, parser, semantic analyzer
 
 ### Control Structures
 - `if-then-else` - Conditional statements
-- `while-do` - While loops
+- `case-of-end` - Multi-way conditional (switch/match statement)
+- `while-do` - While loops (pre-test)
+- `repeat-until` - Repeat-until loops (post-test, always executes at least once)
 - `for-to-do` - For loops (ascending)
 - `for-downto-do` - For loops (descending)
+- `with-do` - With statement for simplified record field access
+- `goto` and `label` - Unconditional jumps (ISO 7185 compliance)
 
 ### Operators
 - Arithmetic: `+`, `-`, `*`, `/`, `div`, `mod`
@@ -39,6 +43,93 @@ A Pascal compiler written in C# that includes a lexer, parser, semantic analyzer
 - Logical: `and`, `or`, `not`
 - Pointer: `^` (dereference), `@` (address-of)
 - Set: `in` (membership testing)
+
+### Mathematical Functions
+All standard Pascal math functions are supported in both interpreter and bytecode VM:
+
+- **Absolute Value & Squaring**
+  - `abs(x)` - Absolute value (preserves type: int→int, real→real)
+  - `sqr(x)` - Square (x²) (preserves type: int→int, real→real)
+  - `sqrt(x)` - Square root (always returns real)
+
+- **Trigonometric Functions**
+  - `sin(x)` - Sine (x in radians, returns real)
+  - `cos(x)` - Cosine (x in radians, returns real)
+  - `arctan(x)` - Arctangent (returns real)
+
+- **Logarithmic & Exponential**
+  - `ln(x)` - Natural logarithm (returns real)
+  - `exp(x)` - Exponential e^x (returns real)
+
+- **Rounding Functions**
+  - `trunc(x)` - Truncate to integer (returns integer)
+  - `round(x)` - Round to nearest integer (returns integer)
+
+- **Boolean Function**
+  - `odd(x)` - Returns true if x is odd (returns boolean)
+
+**Example:**
+```pascal
+var
+  x, y: real;
+  n: integer;
+begin
+  x := sqrt(16.0);        // x = 4.0
+  y := sin(0.0);          // y = 0.0
+  n := abs(-42);          // n = 42 (integer preserved)
+  if odd(5) then          // true
+    writeln('5 is odd');
+  n := round(3.7);        // n = 4
+end.
+```
+
+### String Functions
+All standard Pascal string functions are supported in both interpreter and bytecode VM:
+
+- **String Inspection**
+  - `length(s)` - Returns the length of string s (returns integer)
+  - `pos(substr, s)` - Finds position of substr in s, 1-based (returns integer, 0 if not found)
+
+- **String Manipulation**
+  - `copy(s, start, count)` - Extracts substring from s starting at position start (1-based), count characters
+  - `concat(s1, s2, ...)` - Concatenates 2 or more strings (variable arguments)
+  - `upcase(s)` - Converts string to uppercase (returns string)
+  - `lowercase(s)` - Converts string to lowercase (returns string)
+
+- **Character Conversion**
+  - `chr(n)` - Converts integer ASCII value to character string (returns string)
+  - `ord(s)` - Converts first character of string to ASCII value (returns integer)
+
+**Example:**
+```pascal
+var
+  name, upper: string;
+  ext: string;
+  filename: string;
+  dotPos, len: integer;
+  ch: string;
+begin
+  // String length
+  name := 'Pascal';
+  len := length(name);              // len = 6
+
+  // Case conversion
+  upper := upcase(name);            // upper = 'PASCAL'
+  name := lowercase('HELLO');       // name = 'hello'
+
+  // Substring extraction
+  filename := 'program.pas';
+  dotPos := pos('.', filename);     // dotPos = 8
+  ext := copy(filename, dotPos + 1, length(filename));  // ext = 'pas'
+
+  // String concatenation
+  name := concat('Hello', ' ', 'World');  // name = 'Hello World'
+
+  // Character/ASCII conversion
+  ch := chr(65);                    // ch = 'A'
+  len := ord('A');                  // len = 65
+end.
+```
 
 ### Procedures and Functions
 - `procedure` - Declare procedures (subroutines without return values)
@@ -245,6 +336,15 @@ dotnet run examples/loops.pas
 
 # Run arithmetic operations (interactive - enter two numbers)
 dotnet run examples/arithmetic.pas
+
+# Run comprehensive math functions test (67 tests)
+dotnet run examples/math_functions.pas
+
+# Run basic math operations test (74 tests)
+dotnet run examples/math_operations.pas
+
+# Run comprehensive string functions test (79 tests)
+dotnet run examples/string_functions.pas
 ```
 
 ### Bytecode Compilation and Execution
@@ -641,6 +741,115 @@ begin
         writeln(students[i].grade)
     end
 end.
+```
+
+## Example: Case Statement
+
+```pascal
+program CaseExample;
+var
+    choice : integer;
+    grade : string;
+begin
+    choice := 2;
+
+    { Simple case with single values }
+    case choice of
+        1: writeln('Option One');
+        2: writeln('Option Two');
+        3: writeln('Option Three');
+    else
+        writeln('Invalid Option')
+    end;
+
+    { Case with multiple values per branch }
+    choice := 7;
+    case choice of
+        1, 3, 5, 7, 9: writeln('Odd digit');
+        2, 4, 6, 8: writeln('Even digit');
+        0: writeln('Zero');
+    else
+        writeln('Not a digit')
+    end;
+
+    { Case with ranges }
+    choice := 85;
+    case choice of
+        90..100: grade := 'A';
+        80..89: grade := 'B';
+        70..79: grade := 'C';
+        60..69: grade := 'D';
+        0..59: grade := 'F';
+    else
+        grade := 'Invalid'
+    end;
+    writeln('Grade: ', grade);
+
+    { Case with compound statements }
+    choice := 1;
+    case choice of
+        1: begin
+            writeln('Multiple');
+            writeln('Statements');
+        end;
+        2: writeln('Single Statement');
+    else
+        writeln('Default')
+    end;
+end.
+```
+
+Run with:
+```bash
+dotnet run examples/case_test.pas
+```
+
+## Example: Repeat-Until Loop
+
+The `repeat-until` loop is a post-test loop that always executes at least once:
+
+```pascal
+program RepeatUntilExample;
+var
+    n, sum : integer;
+begin
+    { Basic repeat-until - counts from 1 to 5 }
+    n := 0;
+    repeat
+        n := n + 1;
+        writeln('Count: ', n)
+    until n >= 5;
+
+    { Calculate sum of numbers 1 to 10 }
+    n := 1;
+    sum := 0;
+    repeat
+        sum := sum + n;
+        n := n + 1
+    until n > 10;
+    writeln('Sum 1 to 10: ', sum);  { Outputs: 55 }
+
+    { Always executes at least once (post-test) }
+    n := 100;
+    repeat
+        writeln('Executed once despite condition being true');
+        n := n + 1
+    until n > 50;  { Condition is already true, but body runs once }
+
+    { Factorial calculation }
+    n := 5;
+    sum := 1;
+    repeat
+        sum := sum * n;
+        n := n - 1
+    until n = 0;
+    writeln('5! = ', sum);  { Outputs: 120 }
+end.
+```
+
+Run with:
+```bash
+dotnet run examples/repeat_until_test.pas
 ```
 
 ## Example: File I/O

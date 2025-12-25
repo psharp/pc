@@ -61,6 +61,10 @@ public class Lexer
         { "for", TokenType.FOR },
         { "to", TokenType.TO },
         { "downto", TokenType.DOWNTO },
+        { "repeat", TokenType.REPEAT },
+        { "until", TokenType.UNTIL },
+        { "case", TokenType.CASE },
+        { "with", TokenType.WITH },
         { "procedure", TokenType.PROCEDURE },
         { "function", TokenType.FUNCTION },
         { "const", TokenType.CONST },
@@ -92,7 +96,9 @@ public class Lexer
         { "implementation", TokenType.IMPLEMENTATION },
         { "uses", TokenType.USES },
         { "initialization", TokenType.INITIALIZATION },
-        { "finalization", TokenType.FINALIZATION }
+        { "finalization", TokenType.FINALIZATION },
+        { "goto", TokenType.GOTO },
+        { "label", TokenType.LABEL }
     };
 
     /// <summary>

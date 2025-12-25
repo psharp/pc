@@ -975,6 +975,216 @@ public class VirtualMachine
                 }
                 break;
 
+            // Math function opcodes
+            case OpCode.ABS:
+                {
+                    object? value = _stack.Pop();
+                    object? result;
+                    if (value is int intVal)
+                    {
+                        result = Math.Abs(intVal);
+                    }
+                    else
+                    {
+                        result = Math.Abs(ToDouble(value));
+                    }
+                    _stack.Push(result);
+                    _instructionPointer++;
+                }
+                break;
+
+            case OpCode.SQR:
+                {
+                    object? value = _stack.Pop();
+                    object? result;
+                    if (value is int intVal)
+                    {
+                        result = intVal * intVal;
+                    }
+                    else
+                    {
+                        double dVal = ToDouble(value);
+                        result = dVal * dVal;
+                    }
+                    _stack.Push(result);
+                    _instructionPointer++;
+                }
+                break;
+
+            case OpCode.SQRT:
+                {
+                    object? value = _stack.Pop();
+                    _stack.Push(Math.Sqrt(ToDouble(value)));
+                    _instructionPointer++;
+                }
+                break;
+
+            case OpCode.SIN:
+                {
+                    object? value = _stack.Pop();
+                    _stack.Push(Math.Sin(ToDouble(value)));
+                    _instructionPointer++;
+                }
+                break;
+
+            case OpCode.COS:
+                {
+                    object? value = _stack.Pop();
+                    _stack.Push(Math.Cos(ToDouble(value)));
+                    _instructionPointer++;
+                }
+                break;
+
+            case OpCode.ARCTAN:
+                {
+                    object? value = _stack.Pop();
+                    _stack.Push(Math.Atan(ToDouble(value)));
+                    _instructionPointer++;
+                }
+                break;
+
+            case OpCode.LN:
+                {
+                    object? value = _stack.Pop();
+                    _stack.Push(Math.Log(ToDouble(value)));
+                    _instructionPointer++;
+                }
+                break;
+
+            case OpCode.EXP:
+                {
+                    object? value = _stack.Pop();
+                    _stack.Push(Math.Exp(ToDouble(value)));
+                    _instructionPointer++;
+                }
+                break;
+
+            case OpCode.TRUNC:
+                {
+                    object? value = _stack.Pop();
+                    _stack.Push((int)Math.Truncate(ToDouble(value)));
+                    _instructionPointer++;
+                }
+                break;
+
+            case OpCode.ROUND:
+                {
+                    object? value = _stack.Pop();
+                    _stack.Push((int)Math.Round(ToDouble(value)));
+                    _instructionPointer++;
+                }
+                break;
+
+            case OpCode.ODD:
+                {
+                    object? value = _stack.Pop();
+                    int intVal = Convert.ToInt32(value);
+                    _stack.Push(intVal % 2 != 0);
+                    _instructionPointer++;
+                }
+                break;
+
+            // String function opcodes
+            case OpCode.LENGTH:
+                {
+                    object? value = _stack.Pop();
+                    string str = value?.ToString() ?? "";
+                    _stack.Push(str.Length);
+                    _instructionPointer++;
+                }
+                break;
+
+            case OpCode.COPY:
+                {
+                    // Pop count, start, str (reverse order)
+                    object? countObj = _stack.Pop();
+                    object? startObj = _stack.Pop();
+                    object? strObj = _stack.Pop();
+
+                    string str = strObj?.ToString() ?? "";
+                    int start = Convert.ToInt32(startObj) - 1;  // Convert to 0-based
+                    int count = Convert.ToInt32(countObj);
+
+                    if (start < 0) start = 0;
+                    if (start >= str.Length)
+                    {
+                        _stack.Push("");
+                    }
+                    else
+                    {
+                        if (count < 0) count = 0;
+                        if (start + count > str.Length) count = str.Length - start;
+                        _stack.Push(str.Substring(start, count));
+                    }
+                    _instructionPointer++;
+                }
+                break;
+
+            case OpCode.CONCAT:
+                {
+                    int argCount = (int)instruction.Operand!;
+                    var parts = new string[argCount];
+                    // Pop in reverse order
+                    for (int i = argCount - 1; i >= 0; i--)
+                    {
+                        parts[i] = _stack.Pop()?.ToString() ?? "";
+                    }
+                    _stack.Push(string.Concat(parts));
+                    _instructionPointer++;
+                }
+                break;
+
+            case OpCode.POS:
+                {
+                    // Pop str, substr (reverse order)
+                    object? strObj = _stack.Pop();
+                    object? substrObj = _stack.Pop();
+
+                    string str = strObj?.ToString() ?? "";
+                    string substr = substrObj?.ToString() ?? "";
+
+                    int index = str.IndexOf(substr);
+                    _stack.Push(index >= 0 ? index + 1 : 0);  // Convert to 1-based, 0 if not found
+                    _instructionPointer++;
+                }
+                break;
+
+            case OpCode.UPCASE:
+                {
+                    object? value = _stack.Pop();
+                    string str = value?.ToString() ?? "";
+                    _stack.Push(str.ToUpper());
+                    _instructionPointer++;
+                }
+                break;
+
+            case OpCode.LOWERCASE:
+                {
+                    object? value = _stack.Pop();
+                    string str = value?.ToString() ?? "";
+                    _stack.Push(str.ToLower());
+                    _instructionPointer++;
+                }
+                break;
+
+            case OpCode.CHR:
+                {
+                    object? value = _stack.Pop();
+                    int code = Convert.ToInt32(value);
+                    _stack.Push(((char)code).ToString());
+                    _instructionPointer++;
+                }
+                break;
+
+            case OpCode.ORD:
+                {
+                    object? value = _stack.Pop();
+                    string str = value?.ToString() ?? "";
+                    _stack.Push(str.Length > 0 ? (int)str[0] : 0);
+                    _instructionPointer++;
+                }
+                break;
+
             case OpCode.HALT:
                 _instructionPointer = _program.Instructions.Count;
                 break;

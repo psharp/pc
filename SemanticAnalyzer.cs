@@ -48,6 +48,41 @@ public class SemanticAnalyzer
     /// <summary>Maps function names to their declarations.</summary>
     private readonly Dictionary<string, FunctionDeclarationNode> _functions = new();
 
+    /// <summary>Built-in math functions with their return types.</summary>
+    private readonly Dictionary<string, string> _builtInFunctions = new()
+    {
+        // Absolute value and squaring
+        { "abs", "auto" },      // Returns same type as input (int or real)
+        { "sqr", "auto" },      // Returns same type as input (int or real)
+        { "sqrt", "real" },     // Always returns real
+
+        // Trigonometric functions
+        { "sin", "real" },
+        { "cos", "real" },
+        { "arctan", "real" },
+
+        // Logarithmic and exponential
+        { "ln", "real" },
+        { "exp", "real" },
+
+        // Rounding functions
+        { "trunc", "integer" },  // Truncate to integer
+        { "round", "integer" },  // Round to nearest integer
+
+        // Boolean function
+        { "odd", "boolean" },    // Check if odd
+
+        // String functions
+        { "length", "integer" },   // Length of string
+        { "copy", "string" },      // Copy substring (3 params: str, start, count)
+        { "concat", "string" },    // Concatenate strings (2+ params)
+        { "pos", "integer" },      // Find substring position (2 params)
+        { "upcase", "string" },    // Convert to uppercase
+        { "lowercase", "string" }, // Convert to lowercase
+        { "chr", "string" },       // Convert integer to character
+        { "ord", "integer" }       // Convert character to integer (ASCII value)
+    };
+
     /// <summary>List of semantic errors found during analysis.</summary>
     private readonly List<string> _errors = new();
 
@@ -447,6 +482,38 @@ public class SemanticAnalyzer
                 AnalyzeStatement(whileNode.Body);
                 break;
 
+            case RepeatUntilNode repeatUntilNode:
+                foreach (var stmt in repeatUntilNode.Statements)
+                {
+                    AnalyzeStatement(stmt);
+                }
+                AnalyzeExpression(repeatUntilNode.Condition);
+                // Type check: repeat-until condition must be boolean
+                string repeatCondType = GetExpressionType(repeatUntilNode.Condition);
+                if (repeatCondType != "boolean" && repeatCondType != "unknown")
+                {
+                    _errors.Add($"Repeat-until condition must be boolean, got {repeatCondType}");
+                }
+                break;
+
+            case WithNode withNode:
+                // Check that the with variable is a record
+                string withVarName = withNode.RecordVariable.ToLower();
+                if (!_symbolTable.ContainsKey(withVarName))
+                {
+                    _errors.Add($"Record variable '{withNode.RecordVariable}' is not declared");
+                }
+                AnalyzeStatement(withNode.Statement);
+                break;
+
+            case GotoNode gotoNode:
+                // No type checking needed for goto
+                break;
+
+            case LabeledStatementNode labeledStmt:
+                AnalyzeStatement(labeledStmt.Statement);
+                break;
+
             case ForNode forNode:
                 if (!_symbolTable.ContainsKey(forNode.Variable.ToLower()))
                 {
@@ -670,7 +737,23 @@ public class SemanticAnalyzer
 
             case FunctionCallNode funcCall:
                 string funcName = funcCall.Name.ToLower();
-                if (!_functions.ContainsKey(funcName))
+
+                // Check if it's a built-in function
+                if (_builtInFunctions.ContainsKey(funcName))
+                {
+                    // Validate argument count for built-in functions
+                    int expectedCount = GetBuiltInFunctionParamCount(funcName);
+                    if (expectedCount >= 0 && funcCall.Arguments.Count != expectedCount)
+                    {
+                        _errors.Add($"Built-in function '{funcCall.Name}' expects {expectedCount} argument(s) but got {funcCall.Arguments.Count}");
+                    }
+                    else if (expectedCount == -1 && funcCall.Arguments.Count < 2)
+                    {
+                        // Variable argument count (concat) requires at least 2
+                        _errors.Add($"Built-in function '{funcCall.Name}' requires at least 2 arguments but got {funcCall.Arguments.Count}");
+                    }
+                }
+                else if (!_functions.ContainsKey(funcName))
                 {
                     _errors.Add($"Function '{funcCall.Name}' is not declared");
                 }
@@ -987,7 +1070,22 @@ public class SemanticAnalyzer
 
     private string GetFunctionReturnType(string functionName)
     {
-        if (_functions.TryGetValue(functionName.ToLower(), out var function))
+        string lowerName = functionName.ToLower();
+
+        // Check built-in functions first
+        if (_builtInFunctions.TryGetValue(lowerName, out var returnType))
+        {
+            // "auto" means it returns the same type as its argument
+            // For now, we'll assume numeric input (int or real)
+            // The actual type will be determined at runtime
+            if (returnType == "auto")
+            {
+                return "auto"; // Type checker will handle this
+            }
+            return returnType;
+        }
+
+        if (_functions.TryGetValue(lowerName, out var function))
         {
             return function.ReturnType;
         }
@@ -1061,6 +1159,12 @@ public class SemanticAnalyzer
 
         if (targetType == "unknown" || sourceType == "unknown")
             return true; // Don't report errors for unknown types (already reported elsewhere)
+
+        // "auto" type from built-in functions is compatible with numeric types
+        if (sourceType == "auto" && (targetType == "integer" || targetType == "real"))
+            return true;
+        if (targetType == "auto" && (sourceType == "integer" || sourceType == "real"))
+            return true;
 
         // Integer can be assigned to real (implicit conversion)
         if (targetType == "real" && sourceType == "integer")
@@ -1165,7 +1269,7 @@ public class SemanticAnalyzer
 
     private bool IsNumericType(string type)
     {
-        return type == "integer" || type == "real";
+        return type == "integer" || type == "real" || type == "auto";
     }
 
     private bool IsComparableType(string type)
@@ -1229,5 +1333,27 @@ public class SemanticAnalyzer
                 RegisterFunction(func);
             }
         }
+    }
+
+    private int GetBuiltInFunctionParamCount(string funcName)
+    {
+        return funcName switch
+        {
+            // Single parameter functions
+            "abs" or "sqr" or "sqrt" or "sin" or "cos" or "arctan" or
+            "ln" or "exp" or "trunc" or "round" or "odd" or
+            "length" or "upcase" or "lowercase" or "chr" or "ord" => 1,
+
+            // Two parameter functions
+            "pos" => 2,
+
+            // Three parameter functions
+            "copy" => 3,
+
+            // Variable parameter functions (concat - 2 or more)
+            "concat" => -1,
+
+            _ => 1  // Default to 1 for safety
+        };
     }
 }

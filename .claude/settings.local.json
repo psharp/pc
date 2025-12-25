@@ -9,7 +9,9 @@
       "Bash(dotnet test:*)",
       "Bash(cat:*)",
       "Bash(Get-Content \"d:\\dev\\pc\\AST.cs\")",
-      "Bash(Measure-Object -Line)"
+      "Bash(Measure-Object -Line)",
+      "Bash(powershell -Command \"Get-Content ''d:\\\\dev\\\\pc\\\\Lexer.cs'' | Select-String -Pattern ''enum TokenType'' -Context 0,60\")",
+      "Bash(powershell -Command \"Get-Content ''d:\\\\dev\\\\pc\\\\Interpreter.cs'' | Measure-Object -Line\")"
     ],
     "deny": [],
     "ask": []

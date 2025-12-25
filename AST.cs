@@ -170,6 +170,27 @@ public class WhileNode : StatementNode
     }
 }
 
+/// <summary>
+/// Represents a repeat-until loop statement.
+/// Syntax: repeat Statements until Condition;
+/// Executes Statements repeatedly until Condition becomes true.
+/// The loop body is always executed at least once (post-test loop).
+/// </summary>
+public class RepeatUntilNode : StatementNode
+{
+    /// <summary>Gets the list of statements in the loop body.</summary>
+    public List<StatementNode> Statements { get; }
+
+    /// <summary>Gets the termination condition (loop exits when this is true).</summary>
+    public ExpressionNode Condition { get; }
+
+    public RepeatUntilNode(List<StatementNode> statements, ExpressionNode condition)
+    {
+        Statements = statements;
+        Condition = condition;
+    }
+}
+
 public class ForNode : StatementNode
 {
     public string Variable { get; }
@@ -207,6 +228,125 @@ public class ReadNode : StatementNode
     public ReadNode(List<string> variables)
     {
         Variables = variables;
+    }
+}
+
+/// <summary>
+/// Represents a case statement (multi-way conditional branch).
+/// Syntax: case Expression of Value1: Statement1; Value2: Statement2; else ElseStatement end;
+/// The else branch is optional.
+/// </summary>
+public class CaseNode : StatementNode
+{
+    /// <summary>Gets the expression to evaluate and match against case values.</summary>
+    public ExpressionNode Expression { get; }
+
+    /// <summary>Gets the list of case branches (value/range and corresponding statement).</summary>
+    public List<CaseBranch> Branches { get; }
+
+    /// <summary>Gets the optional else statement executed when no case matches.</summary>
+    public StatementNode? ElseBranch { get; }
+
+    public CaseNode(ExpressionNode expression, List<CaseBranch> branches, StatementNode? elseBranch = null)
+    {
+        Expression = expression;
+        Branches = branches;
+        ElseBranch = elseBranch;
+    }
+}
+
+/// <summary>
+/// Represents a with statement for record field access.
+/// Syntax: with RecordVar do Statement;
+/// Allows accessing record fields without qualifying them with the record variable name.
+/// </summary>
+public class WithNode : StatementNode
+{
+    /// <summary>Gets the record variable to access.</summary>
+    public string RecordVariable { get; }
+
+    /// <summary>Gets the statement executed within the with scope.</summary>
+    public StatementNode Statement { get; }
+
+    public WithNode(string recordVariable, StatementNode statement)
+    {
+        RecordVariable = recordVariable;
+        Statement = statement;
+    }
+}
+
+/// <summary>
+/// Represents a goto statement that jumps to a labeled statement.
+/// Syntax: goto LabelName;
+/// </summary>
+public class GotoNode : StatementNode
+{
+    /// <summary>Gets the label to jump to.</summary>
+    public string Label { get; }
+
+    public GotoNode(string label)
+    {
+        Label = label;
+    }
+}
+
+/// <summary>
+/// Represents a labeled statement.
+/// Syntax: LabelName: Statement;
+/// </summary>
+public class LabeledStatementNode : StatementNode
+{
+    /// <summary>Gets the label name.</summary>
+    public string Label { get; }
+
+    /// <summary>Gets the statement after the label.</summary>
+    public StatementNode Statement { get; }
+
+    public LabeledStatementNode(string label, StatementNode statement)
+    {
+        Label = label;
+        Statement = statement;
+    }
+}
+
+/// <summary>
+/// Represents a single branch in a case statement.
+/// Each branch contains one or more values/ranges and the statement to execute if matched.
+/// </summary>
+public class CaseBranch
+{
+    /// <summary>Gets the list of values or ranges to match against.</summary>
+    public List<CaseLabel> Labels { get; }
+
+    /// <summary>Gets the statement to execute if any label matches.</summary>
+    public StatementNode Statement { get; }
+
+    public CaseBranch(List<CaseLabel> labels, StatementNode statement)
+    {
+        Labels = labels;
+        Statement = statement;
+    }
+}
+
+/// <summary>
+/// Represents a single value or range in a case branch.
+/// Can be either a single value (e.g., 1) or a range (e.g., 1..5).
+/// </summary>
+public class CaseLabel
+{
+    /// <summary>Gets the start value of the range (or the single value if not a range).</summary>
+    public ExpressionNode StartValue { get; }
+
+    /// <summary>Gets the end value of the range (null for single values).</summary>
+    public ExpressionNode? EndValue { get; }
+
+    /// <summary>Gets whether this label represents a range (start..end).</summary>
+    public bool IsRange => EndValue != null;
+
+    public CaseLabel(ExpressionNode startValue, ExpressionNode? endValue = null)
+    {
+        StartValue = startValue;
+        EndValue = endValue;
     }
 }
 

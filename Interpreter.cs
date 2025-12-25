@@ -353,11 +353,36 @@ public class Interpreter
                 }
                 break;
 
+            case CaseNode caseNode:
+                ExecuteCaseStatement(caseNode);
+                break;
+
             case WhileNode whileNode:
                 while (IsTrue(EvaluateExpression(whileNode.Condition)))
                 {
                     ExecuteStatement(whileNode.Body);
                 }
+                break;
+
+            case RepeatUntilNode repeatUntilNode:
+                do
+                {
+                    foreach (var stmt in repeatUntilNode.Statements)
+                    {
+                        ExecuteStatement(stmt);
+                    }
+                } while (!IsTrue(EvaluateExpression(repeatUntilNode.Condition)));
+                break;
+
+            case WithNode withNode:
+                ExecuteWithStatement(withNode);
+                break;
+
+            case GotoNode gotoNode:
+                throw new GotoException(gotoNode.Label);
+
+            case LabeledStatementNode labeledStmt:
+                ExecuteStatement(labeledStmt.Statement);
                 break;
 
             case ForNode forNode:
@@ -1038,6 +1063,14 @@ public class Interpreter
     private object? ExecuteFunction(string name, List<ExpressionNode> arguments)
     {
         string funcName = name.ToLower();
+
+        // Check if it's a built-in math function
+        object? builtInResult = TryExecuteBuiltInFunction(funcName, arguments);
+        if (builtInResult != null || IsBuiltInFunction(funcName))
+        {
+            return builtInResult;
+        }
+
         if (!_functions.TryGetValue(funcName, out var function))
         {
             throw new Exception($"Function '{name}' not found");
@@ -1169,6 +1202,82 @@ public class Interpreter
         return returnValue;
     }
 
+    private void ExecuteCaseStatement(CaseNode caseNode)
+    {
+        // Evaluate the case expression
+        object? caseValue = EvaluateExpression(caseNode.Expression);
+
+        // Try to match against each case branch
+        foreach (var branch in caseNode.Branches)
+        {
+            foreach (var label in branch.Labels)
+            {
+                bool matched = false;
+
+                if (label.IsRange)
+                {
+                    // Range matching: check if caseValue is between start and end (inclusive)
+                    object? startValue = EvaluateExpression(label.StartValue);
+                    object? endValue = EvaluateExpression(label.EndValue!);
+
+                    // Convert to comparable values
+                    if (caseValue is int intCaseValue && startValue is int intStart && endValue is int intEnd)
+                    {
+                        matched = intCaseValue >= intStart && intCaseValue <= intEnd;
+                    }
+                    else if (caseValue is double doubleCaseValue && startValue is double doubleStart && endValue is double doubleEnd)
+                    {
+                        matched = doubleCaseValue >= doubleStart && doubleCaseValue <= doubleEnd;
+                    }
+                    else if (caseValue is string stringCaseValue && startValue is string stringStart && endValue is string stringEnd)
+                    {
+                        // String range comparison (lexicographic)
+                        matched = string.CompareOrdinal(stringCaseValue, stringStart) >= 0 &&
+                                 string.CompareOrdinal(stringCaseValue, stringEnd) <= 0;
+                    }
+                }
+                else
+                {
+                    // Single value matching
+                    object? labelValue = EvaluateExpression(label.StartValue);
+
+                    // Use Equals for comparison to handle different types
+                    if (caseValue != null && labelValue != null)
+                    {
+                        // Handle numeric comparisons
+                        if ((caseValue is int || caseValue is double) && (labelValue is int || labelValue is double))
+                        {
+                            double cv = Convert.ToDouble(caseValue);
+                            double lv = Convert.ToDouble(labelValue);
+                            matched = Math.Abs(cv - lv) < 0.0001;
+                        }
+                        else
+                        {
+                            matched = caseValue.Equals(labelValue);
+                        }
+                    }
+                    else
+                    {
+                        matched = caseValue == labelValue;
+                    }
+                }
+
+                // If we found a match, execute the statement and return
+                if (matched)
+                {
+                    ExecuteStatement(branch.Statement);
+                    return;
+                }
+            }
+        }
+
+        // No match found, execute else branch if present
+        if (caseNode.ElseBranch != null)
+        {
+            ExecuteStatement(caseNode.ElseBranch);
+        }
+    }
+
     // Helper method to calculate linear index from multidimensional indices
     private int CalculateLinearIndex(ArrayTypeNode arrayType, List<int> indices)
     {
@@ -1266,5 +1375,171 @@ public class Interpreter
         {
             ExecuteBlock(unit.InitializationBlock);
         }
+    }
+
+    private bool IsBuiltInFunction(string funcName)
+    {
+        return funcName switch
+        {
+            "abs" or "sqr" or "sqrt" or "sin" or "cos" or "arctan" or
+            "ln" or "exp" or "trunc" or "round" or "odd" or
+            "length" or "copy" or "concat" or "pos" or "upcase" or
+            "lowercase" or "chr" or "ord" => true,
+            _ => false
+        };
+    }
+
+    private object? TryExecuteBuiltInFunction(string funcName, List<ExpressionNode> arguments)
+    {
+        if (!IsBuiltInFunction(funcName))
+        {
+            return null;
+        }
+
+        // Handle math functions (1 parameter)
+        if (arguments.Count == 1)
+        {
+            object? arg = EvaluateExpression(arguments[0]);
+            if (arg == null && funcName != "chr")
+            {
+                throw new Exception($"Argument to {funcName} cannot be null");
+            }
+
+            return funcName switch
+            {
+                "abs" => ExecuteAbs(arg!),
+                "sqr" => ExecuteSqr(arg!),
+                "sqrt" => Math.Sqrt(ToDouble(arg)),
+                "sin" => Math.Sin(ToDouble(arg)),
+                "cos" => Math.Cos(ToDouble(arg)),
+                "arctan" => Math.Atan(ToDouble(arg)),
+                "ln" => Math.Log(ToDouble(arg)),
+                "exp" => Math.Exp(ToDouble(arg)),
+                "trunc" => (int)Math.Truncate(ToDouble(arg)),
+                "round" => (int)Math.Round(ToDouble(arg)),
+                "odd" => Convert.ToInt32(arg) % 2 != 0,
+                "length" => arg!.ToString()!.Length,
+                "upcase" => arg!.ToString()!.ToUpper(),
+                "lowercase" => arg!.ToString()!.ToLower(),
+                "chr" => ((char)Convert.ToInt32(arg)).ToString(),
+                "ord" => arg!.ToString()!.Length > 0 ? (int)arg.ToString()![0] : 0,
+                _ => null
+            };
+        }
+
+        // Handle string functions with multiple parameters
+        return funcName switch
+        {
+            "copy" when arguments.Count == 3 => ExecuteCopy(arguments),
+            "pos" when arguments.Count == 2 => ExecutePos(arguments),
+            "concat" when arguments.Count >= 2 => ExecuteConcat(arguments),
+            _ => null
+        };
+    }
+
+    private object ExecuteAbs(object value)
+    {
+        // Return same type as input
+        if (value is int intVal)
+        {
+            return Math.Abs(intVal);
+        }
+        return Math.Abs(ToDouble(value));
+    }
+
+    private object ExecuteSqr(object value)
+    {
+        // Return same type as input
+        if (value is int intVal)
+        {
+            return intVal * intVal;
+        }
+        double dVal = ToDouble(value);
+        return dVal * dVal;
+    }
+
+    private string ExecuteCopy(List<ExpressionNode> arguments)
+    {
+        // copy(s, index, count) - Extract substring
+        string str = EvaluateExpression(arguments[0])?.ToString() ?? "";
+        int start = Convert.ToInt32(EvaluateExpression(arguments[1]));
+        int count = Convert.ToInt32(EvaluateExpression(arguments[2]));
+
+        // Pascal uses 1-based indexing
+        start = start - 1;
+        if (start < 0) start = 0;
+        if (start >= str.Length) return "";
+        if (count < 0) count = 0;
+        if (start + count > str.Length) count = str.Length - start;
+
+        return str.Substring(start, count);
+    }
+
+    private int ExecutePos(List<ExpressionNode> arguments)
+    {
+        // pos(substr, s) - Find position of substring (1-based, 0 if not found)
+        string substr = EvaluateExpression(arguments[0])?.ToString() ?? "";
+        string str = EvaluateExpression(arguments[1])?.ToString() ?? "";
+
+        int index = str.IndexOf(substr);
+        return index >= 0 ? index + 1 : 0;  // Convert to 1-based, or 0 if not found
+    }
+
+    private string ExecuteConcat(List<ExpressionNode> arguments)
+    {
+        // concat(s1, s2, ...) - Concatenate multiple strings
+        var sb = new System.Text.StringBuilder();
+        foreach (var arg in arguments)
+        {
+            sb.Append(EvaluateExpression(arg)?.ToString() ?? "");
+        }
+        return sb.ToString();
+    }
+
+    private void ExecuteWithStatement(WithNode withNode)
+    {
+        // The with statement allows accessing record fields without qualification
+        // Create a temporary scope with the record fields
+        string recordName = withNode.RecordVariable.ToLower();
+
+        if (!_records.ContainsKey(recordName))
+        {
+            throw new Exception($"Record variable '{recordName}' not found");
+        }
+
+        // Push a new scope with the record fields
+        var withScope = new Dictionary<string, object?>(_records[recordName]);
+        _scopeChain.Push(withScope);
+
+        try
+        {
+            // Execute the statement within the with scope
+            ExecuteStatement(withNode.Statement);
+
+            // Copy any changes back to the record
+            foreach (var kvp in withScope)
+            {
+                _records[recordName][kvp.Key] = kvp.Value;
+            }
+        }
+        finally
+        {
+            // Pop the with scope
+            _scopeChain.Pop();
+        }
+    }
+}
+
+/// <summary>
+/// Exception used to implement goto statement control flow.
+/// Thrown when a goto is executed and caught by the label handler.
+/// </summary>
+public class GotoException : Exception
+{
+    public string Label { get; }
+
+    public GotoException(string label) : base($"goto {label}")
+    {
+        Label = label;
     }
 }

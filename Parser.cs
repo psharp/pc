@@ -213,6 +213,16 @@ public class Parser
                 {
                     return ParseRead();
                 }
+                // Check for labeled statement (identifier followed by colon)
+                // Look ahead to see if next token is a colon
+                if (_position + 1 < _tokens.Count && _tokens[_position + 1].Type == TokenType.COLON)
+                {
+                    string label = _currentToken.Value;
+                    Advance(); // consume identifier
+                    Expect(TokenType.COLON);
+                    StatementNode stmt = ParseStatement();
+                    return new LabeledStatementNode(label, stmt);
+                }
                 // Check if this might be a procedure call or assignment
                 return ParseAssignmentOrProcedureCall();
 
@@ -237,11 +247,23 @@ public class Parser
             case TokenType.IF:
                 return ParseIf();
 
+            case TokenType.CASE:
+                return ParseCase();
+
             case TokenType.WHILE:
                 return ParseWhile();
 
+            case TokenType.REPEAT:
+                return ParseRepeatUntil();
+
             case TokenType.FOR:
                 return ParseFor();
+
+            case TokenType.WITH:
+                return ParseWith();
+
+            case TokenType.GOTO:
+                return ParseGoto();
 
             case TokenType.BEGIN:
                 return ParseCompoundStatement();
@@ -364,6 +386,75 @@ public class Parser
         return new IfNode(condition, thenBranch, elseBranch);
     }
 
+    private CaseNode ParseCase()
+    {
+        Expect(TokenType.CASE);
+        ExpressionNode expression = ParseExpression();
+        Expect(TokenType.OF);
+
+        var branches = new List<CaseBranch>();
+
+        // Parse case branches until we hit 'else' or 'end'
+        while (_currentToken.Type != TokenType.ELSE && _currentToken.Type != TokenType.END)
+        {
+            // Parse case labels (value or range, can have multiple separated by commas)
+            var labels = new List<CaseLabel>();
+
+            do
+            {
+                if (labels.Count > 0)
+                {
+                    Expect(TokenType.COMMA);
+                }
+
+                // Parse the first value
+                ExpressionNode startValue = ParseExpression();
+                ExpressionNode? endValue = null;
+
+                // Check for range (value1..value2)
+                if (_currentToken.Type == TokenType.DOTDOT)
+                {
+                    Advance();
+                    endValue = ParseExpression();
+                }
+
+                labels.Add(new CaseLabel(startValue, endValue));
+
+            } while (_currentToken.Type == TokenType.COMMA);
+
+            // Expect colon after the case labels
+            Expect(TokenType.COLON);
+
+            // Parse the statement for this case
+            StatementNode statement = ParseStatement();
+            branches.Add(new CaseBranch(labels, statement));
+
+            // Skip semicolon if present
+            if (_currentToken.Type == TokenType.SEMICOLON)
+            {
+                Advance();
+            }
+        }
+
+        // Parse optional else branch
+        StatementNode? elseBranch = null;
+        if (_currentToken.Type == TokenType.ELSE)
+        {
+            Advance();
+            elseBranch = ParseStatement();
+
+            // Skip semicolon if present after else branch
+            if (_currentToken.Type == TokenType.SEMICOLON)
+            {
+                Advance();
+            }
+        }
+
+        Expect(TokenType.END);
+
+        return new CaseNode(expression, branches, elseBranch);
+    }
+
     private WhileNode ParseWhile()
     {
         Expect(TokenType.WHILE);
@@ -401,6 +492,46 @@ public class Parser
         StatementNode body = ParseStatement();
 
         return new ForNode(variable, start, end, isDownTo, body);
+    }
+
+    private RepeatUntilNode ParseRepeatUntil()
+    {
+        Expect(TokenType.REPEAT);
+        var statements = new List<StatementNode>();
+
+        // Parse statements until we hit 'until'
+        while (_currentToken.Type != TokenType.UNTIL)
+        {
+            statements.Add(ParseStatement());
+
+            // Consume optional semicolon between statements
+            if (_currentToken.Type == TokenType.SEMICOLON)
+            {
+                Advance();
+            }
+        }
+
+        Expect(TokenType.UNTIL);
+        ExpressionNode condition = ParseExpression();
+        return new RepeatUntilNode(statements, condition);
+    }
+
+    private WithNode ParseWith()
+    {
+        Expect(TokenType.WITH);
+        string recordVariable = _currentToken.Value;
+        Expect(TokenType.IDENTIFIER);
+        Expect(TokenType.DO);
+        StatementNode statement = ParseStatement();
+        return new WithNode(recordVariable, statement);
+    }
+
+    private GotoNode ParseGoto()
+    {
+        Expect(TokenType.GOTO);
+        string label = _currentToken.Value;
+        Expect(TokenType.IDENTIFIER);
+        return new GotoNode(label);
     }
 
     private StatementNode ParseWrite()
