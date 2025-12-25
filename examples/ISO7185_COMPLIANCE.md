@@ -58,13 +58,14 @@ dotnet run examples/iso7185_simple_test.pas
 
 | Test Suite | Tests | Status | File |
 |------------|-------|--------|------|
-| ISO 7185 Core Features | 29 | ✅ All pass | `iso7185_simple_test.pas` |
+| ISO 7185 Simple Test | 29 | ✅ All pass | `iso7185_simple_test.pas` |
+| ISO 7185 Comprehensive Test | 71 | ✅ All pass | `iso7185_compliance.pas` |
 | Math Operations | 74 | ✅ All pass | `math_operations.pas` |
 | Math Functions | 67 | ✅ All pass | `math_functions.pas` |
 | String Functions | 79 | ✅ All pass | `string_functions.pas` |
 | Case Statements | 47 | ✅ All pass | `case_test.pas` |
 | Repeat-Until Loops | 17 | ✅ All pass | `repeat_until_test.pas` |
-| **GRAND TOTAL** | **313+** | **✅ All pass** | - |
+| **GRAND TOTAL** | **384+** | **✅ All pass** | - |
 
 ### Feature Coverage by Category
 
@@ -247,11 +248,19 @@ These limitations do not affect the vast majority of Pascal programs and all ess
 
 ## Test Program Examples
 
-### Core Compliance Test
+### Core Compliance Tests
+
+**Simple Test** (29 tests):
 ```bash
 dotnet run examples/iso7185_simple_test.pas
 ```
-Tests all core ISO 7185 features in one comprehensive program (29 tests).
+Tests core ISO 7185 features: data types, arithmetic, math functions, string functions, control structures.
+
+**Comprehensive Test** (71 tests):
+```bash
+dotnet run examples/iso7185_compliance.pas
+```
+Extensive testing of all ISO 7185 features including records, with statements, procedures/functions, nested procedures, var parameters, goto/label, and enumerations.
 
 ### Specific Feature Tests
 ```bash

@@ -499,11 +499,34 @@ public class SemanticAnalyzer
             case WithNode withNode:
                 // Check that the with variable is a record
                 string withVarName = withNode.RecordVariable.ToLower();
-                if (!_symbolTable.ContainsKey(withVarName))
+                if (!_recordVariables.ContainsKey(withVarName))
                 {
                     _errors.Add($"Record variable '{withNode.RecordVariable}' is not declared");
                 }
-                AnalyzeStatement(withNode.Statement);
+                else
+                {
+                    // Temporarily add record fields to symbol table
+                    var savedSymbols = new Dictionary<string, string>(_symbolTable);
+                    string recordTypeName = _recordVariables[withVarName];
+                    var recordType = _recordTypeDefinitions[recordTypeName.ToLower()];
+
+                    foreach (var field in recordType.Fields)
+                    {
+                        foreach (var fieldName in field.Names)
+                        {
+                            _symbolTable[fieldName.ToLower()] = field.Type;
+                        }
+                    }
+
+                    AnalyzeStatement(withNode.Statement);
+
+                    // Restore symbol table
+                    _symbolTable.Clear();
+                    foreach (var kvp in savedSymbols)
+                    {
+                        _symbolTable[kvp.Key] = kvp.Value;
+                    }
+                }
                 break;
 
             case GotoNode gotoNode:
@@ -603,7 +626,7 @@ public class SemanticAnalyzer
                 {
                     // Verify the field exists in the record type
                     string recordTypeName = _recordVariables[recordName];
-                    var recordType = _recordTypeDefinitions[recordTypeName];
+                    var recordType = _recordTypeDefinitions[recordTypeName.ToLower()];
                     bool fieldFound = false;
                     string fieldType = "unknown";
                     foreach (var field in recordType.Fields)
@@ -837,7 +860,7 @@ public class SemanticAnalyzer
                 {
                     // Verify the field exists in the record type
                     string recTypeName = _recordVariables[recName];
-                    var recType = _recordTypeDefinitions[recTypeName];
+                    var recType = _recordTypeDefinitions[recTypeName.ToLower()];
                     bool fieldFound = false;
                     foreach (var field in recType.Fields)
                     {
@@ -909,6 +932,7 @@ public class SemanticAnalyzer
     private void AnalyzeProcedure(ProcedureDeclarationNode procedure)
     {
         var savedSymbols = new Dictionary<string, string>(_symbolTable);
+        var savedRecordVariables = new Dictionary<string, string>(_recordVariables);
         var localNames = new HashSet<string>();
 
         // Add parameters to local scope
@@ -934,6 +958,12 @@ public class SemanticAnalyzer
                 {
                     localNames.Add(name.ToLower());
                     _symbolTable[name.ToLower()] = varDecl.Type;
+
+                    // If the type is a record type, also add to record variables
+                    if (_recordTypeDefinitions.ContainsKey(varDecl.Type.ToLower()))
+                    {
+                        _recordVariables[name.ToLower()] = varDecl.Type;
+                    }
                 }
             }
         }
@@ -953,17 +983,24 @@ public class SemanticAnalyzer
         // Analyze procedure body
         AnalyzeBlock(procedure.Block);
 
-        // Restore symbol table
+        // Restore symbol table and record variables
         _symbolTable.Clear();
         foreach (var kvp in savedSymbols)
         {
             _symbolTable[kvp.Key] = kvp.Value;
+        }
+
+        _recordVariables.Clear();
+        foreach (var kvp in savedRecordVariables)
+        {
+            _recordVariables[kvp.Key] = kvp.Value;
         }
     }
 
     private void AnalyzeFunction(FunctionDeclarationNode function)
     {
         var savedSymbols = new Dictionary<string, string>(_symbolTable);
+        var savedRecordVariables = new Dictionary<string, string>(_recordVariables);
         var localNames = new HashSet<string>();
 
         // Add function name as a variable (for return value assignment)
@@ -993,6 +1030,12 @@ public class SemanticAnalyzer
                 {
                     localNames.Add(name.ToLower());
                     _symbolTable[name.ToLower()] = varDecl.Type;
+
+                    // If the type is a record type, also add to record variables
+                    if (_recordTypeDefinitions.ContainsKey(varDecl.Type.ToLower()))
+                    {
+                        _recordVariables[name.ToLower()] = varDecl.Type;
+                    }
                 }
             }
         }
@@ -1012,11 +1055,17 @@ public class SemanticAnalyzer
         // Analyze function body
         AnalyzeBlock(function.Block);
 
-        // Restore symbol table
+        // Restore symbol table and record variables
         _symbolTable.Clear();
         foreach (var kvp in savedSymbols)
         {
             _symbolTable[kvp.Key] = kvp.Value;
+        }
+
+        _recordVariables.Clear();
+        foreach (var kvp in savedRecordVariables)
+        {
+            _recordVariables[kvp.Key] = kvp.Value;
         }
     }
 

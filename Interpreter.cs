@@ -276,21 +276,71 @@ public class Interpreter
 
     private object? GetDefaultValue(string type)
     {
-        return type.ToLower() switch
+        string lowerType = type.ToLower();
+
+        // Check for basic types first
+        switch (lowerType)
         {
-            "integer" => 0,
-            "real" => 0.0,
-            "string" => "",
-            "boolean" => false,
-            _ => null
-        };
+            case "integer":
+                return 0;
+            case "real":
+                return 0.0;
+            case "string":
+                return "";
+            case "boolean":
+                return false;
+        }
+
+        // Check if it's a record type
+        if (_recordTypes.ContainsKey(lowerType))
+        {
+            // Return a placeholder - actual record initialization will be done separately
+            return null;
+        }
+
+        // Check if it's an enum type
+        if (_enumTypes.ContainsKey(lowerType))
+        {
+            // Return the first enum value
+            var enumType = _enumTypes[lowerType];
+            return enumType.Values.First();
+        }
+
+        return null;
     }
 
     private void ExecuteBlock(BlockNode block)
     {
-        foreach (var statement in block.Statements)
+        int i = 0;
+        while (i < block.Statements.Count)
         {
-            ExecuteStatement(statement);
+            try
+            {
+                ExecuteStatement(block.Statements[i]);
+                i++;
+            }
+            catch (GotoException gotoEx)
+            {
+                // Find the label in the remaining statements
+                bool labelFound = false;
+                for (int j = i + 1; j < block.Statements.Count; j++)
+                {
+                    if (block.Statements[j] is LabeledStatementNode labeledStmt &&
+                        labeledStmt.Label.Equals(gotoEx.Label, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Jump to this label and continue execution
+                        i = j;
+                        labelFound = true;
+                        break;
+                    }
+                }
+
+                if (!labelFound)
+                {
+                    // Label not found in this block, propagate exception to outer block
+                    throw;
+                }
+            }
         }
     }
 
@@ -1060,12 +1110,49 @@ public class Interpreter
         {
             foreach (var varName in varDecl.Names)
             {
-                localScope[varName.ToLower()] = GetDefaultValue(varDecl.Type);
+                string varNameLower = varName.ToLower();
+                string varType = varDecl.Type.ToLower();
+
+                // Check if it's a record type
+                if (_recordTypes.ContainsKey(varType))
+                {
+                    // Create a new record instance
+                    var recordData = new Dictionary<string, object?>();
+                    var recordType = _recordTypes[varType];
+                    // Initialize all fields to default values
+                    foreach (var field in recordType.Fields)
+                    {
+                        foreach (var fieldName in field.Names)
+                        {
+                            recordData[fieldName.ToLower()] = GetDefaultValue(field.Type);
+                        }
+                    }
+                    _records[varNameLower] = recordData;
+                    localScope[varNameLower] = null; // Record is stored in _records, not in local scope
+                }
+                else
+                {
+                    localScope[varNameLower] = GetDefaultValue(varDecl.Type);
+                }
             }
         }
 
         // Push the local scope onto the scope chain
         _scopeChain.Push(localScope);
+
+        // Track local record variables for cleanup
+        var localRecordVars = new List<string>();
+        foreach (var varDecl in procedure.LocalVariables)
+        {
+            string varType = varDecl.Type.ToLower();
+            if (_recordTypes.ContainsKey(varType))
+            {
+                foreach (var varName in varDecl.Names)
+                {
+                    localRecordVars.Add(varName.ToLower());
+                }
+            }
+        }
 
         try
         {
@@ -1076,6 +1163,12 @@ public class Interpreter
         {
             // Pop the local scope from the scope chain
             _scopeChain.Pop();
+
+            // Clean up local record variables
+            foreach (var recordVar in localRecordVars)
+            {
+                _records.Remove(recordVar);
+            }
 
             // Copy var parameter values back to caller's variables
             foreach (var mapping in varParamMappings)
@@ -1196,12 +1289,49 @@ public class Interpreter
         {
             foreach (var varName in varDecl.Names)
             {
-                localScope[varName.ToLower()] = GetDefaultValue(varDecl.Type);
+                string varNameLower = varName.ToLower();
+                string varType = varDecl.Type.ToLower();
+
+                // Check if it's a record type
+                if (_recordTypes.ContainsKey(varType))
+                {
+                    // Create a new record instance
+                    var recordData = new Dictionary<string, object?>();
+                    var recordType = _recordTypes[varType];
+                    // Initialize all fields to default values
+                    foreach (var field in recordType.Fields)
+                    {
+                        foreach (var fieldName in field.Names)
+                        {
+                            recordData[fieldName.ToLower()] = GetDefaultValue(field.Type);
+                        }
+                    }
+                    _records[varNameLower] = recordData;
+                    localScope[varNameLower] = null; // Record is stored in _records, not in local scope
+                }
+                else
+                {
+                    localScope[varNameLower] = GetDefaultValue(varDecl.Type);
+                }
             }
         }
 
         // Push the local scope onto the scope chain
         _scopeChain.Push(localScope);
+
+        // Track local record variables for cleanup
+        var localRecordVars = new List<string>();
+        foreach (var varDecl in function.LocalVariables)
+        {
+            string varType = varDecl.Type.ToLower();
+            if (_recordTypes.ContainsKey(varType))
+            {
+                foreach (var varName in varDecl.Names)
+                {
+                    localRecordVars.Add(varName.ToLower());
+                }
+            }
+        }
 
         object? returnValue;
         try
@@ -1216,6 +1346,12 @@ public class Interpreter
         {
             // Pop the local scope from the scope chain
             _scopeChain.Pop();
+
+            // Clean up local record variables
+            foreach (var recordVar in localRecordVars)
+            {
+                _records.Remove(recordVar);
+            }
 
             // Copy var parameter values back to caller's variables
             foreach (var mapping in varParamMappings)

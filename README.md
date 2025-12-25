@@ -1165,34 +1165,48 @@ This compiler implements the **ISO 7185:1990 (ANSI Pascal) standard** with compr
 
 ### Compliance Test Suite
 
-Run the ISO 7185 compliance test suite to verify standard conformance:
+Run the ISO 7185 compliance test suites to verify standard conformance:
 
+**Simple Core Test** (29 tests):
 ```bash
 dotnet run examples/iso7185_simple_test.pas
 ```
+Tests basic data types, arithmetic, math functions, string functions, and control structures.
 
-**Test Results**: ✅ 29/29 core feature tests pass
-
-The test suite validates:
+**Comprehensive Test** (71 tests):
+```bash
+dotnet run examples/iso7185_compliance.pas
+```
+Extensive testing of all ISO 7185 features including:
 - Data types (integer, real, boolean, string)
-- Arithmetic operations (integer and real arithmetic)
+- Arithmetic operations (integer and real)
+- Relational and boolean operations
 - All standard math functions (abs, sqr, sqrt, sin, cos, arctan, ln, exp, trunc, round, odd)
 - All standard string functions (length, copy, concat, pos, upcase, lowercase, chr, ord)
-- Control structures (if-then-else, while, repeat-until, for-to, for-downto, case)
+- All control structures (if-then-else, while, repeat-until, for-to/downto, case)
+- Records and record field access
+- With statements for simplified record access
+- Procedures and functions (including nested procedures with closures)
+- Var parameters (pass by reference)
+- Goto/label statements
+- Enumerations
 
-Additional ISO 7185 features (arrays, records, pointers, sets, enumerations, with statements, goto/label) are tested in dedicated example programs throughout the examples directory.
+**Test Results**: ✅ 100/100 tests pass (29 simple + 71 comprehensive)
+
+Additional ISO 7185 features (arrays, pointers, sets, file I/O) are tested in dedicated example programs throughout the examples directory.
 
 ### Test Coverage Summary
 
 | Test Suite | Tests | Status | File |
 |------------|-------|--------|------|
-| ISO 7185 Core Features | 29 | ✅ All pass | `iso7185_simple_test.pas` |
+| ISO 7185 Simple Test | 29 | ✅ All pass | `iso7185_simple_test.pas` |
+| ISO 7185 Comprehensive Test | 71 | ✅ All pass | `iso7185_compliance.pas` |
 | Math Operations | 74 | ✅ All pass | `math_operations.pas` |
 | Math Functions | 67 | ✅ All pass | `math_functions.pas` |
 | String Functions | 79 | ✅ All pass | `string_functions.pas` |
 | Case Statements | 47 | ✅ All pass | `case_test.pas` |
 | Repeat-Until Loops | 17 | ✅ All pass | `repeat_until_test.pas` |
-| **GRAND TOTAL** | **313+** | **✅ All pass** | - |
+| **GRAND TOTAL** | **384+** | **✅ All pass** | - |
 
 ### ✅ Implemented ISO 7185 Features
 

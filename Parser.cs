@@ -167,7 +167,8 @@ public class Parser
             Expect(TokenType.COLON);
             string type = _currentToken.Value;
 
-            if (!Match(TokenType.INTEGER, TokenType.REAL, TokenType.STRING, TokenType.BOOLEAN))
+            // Accept built-in types or custom type identifiers (records, enums, etc.)
+            if (!Match(TokenType.INTEGER, TokenType.REAL, TokenType.STRING, TokenType.BOOLEAN, TokenType.IDENTIFIER))
             {
                 throw new Exception($"Expected type but got {_currentToken.Type}");
             }
@@ -371,6 +372,11 @@ public class Parser
             Expect(TokenType.ASSIGN);
             ExpressionNode expression = ParseExpression();
             return new AssignmentNode(name, expression);
+        }
+        // If followed by semicolon or end, it's a parameterless procedure call
+        else if (_currentToken.Type == TokenType.SEMICOLON || _currentToken.Type == TokenType.END)
+        {
+            return new ProcedureCallNode(name, new List<ExpressionNode>());
         }
         else
         {
