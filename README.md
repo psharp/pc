@@ -281,10 +281,40 @@ end.
 - .NET 8.0 SDK or later
 - (Optional) Visual Studio Code with C# Dev Kit extension for IDE support
 
-### Build the project:
+### Development Build
+
+Build the project for development:
 ```bash
 dotnet build
 ```
+
+Build the project in Release mode for better performance:
+```bash
+dotnet build PascalCompiler.csproj -c Release
+```
+
+### Deployment Builds
+
+**Framework-Dependent Deployment** (requires .NET 8.0 runtime on target machine):
+```bash
+dotnet publish PascalCompiler.csproj -c Release -o publish
+```
+- Output: `publish/` folder (~366 KB)
+- Requires .NET 8.0 runtime installed
+- Fast startup, small size
+
+**Self-Contained Deployment** (no .NET runtime required):
+```bash
+dotnet publish PascalCompiler.csproj -c Release -r win-x64 --self-contained -o publish-standalone
+```
+- Output: `publish-standalone/` folder (~72 MB)
+- Includes .NET 8.0 runtime - runs on any Windows x64 system
+- No dependencies required
+
+For other platforms, replace `win-x64` with:
+- `linux-x64` - Linux 64-bit
+- `osx-x64` - macOS Intel
+- `osx-arm64` - macOS Apple Silicon
 
 ### Run the tests:
 ```bash
@@ -317,7 +347,23 @@ The project includes VSCode configuration files for debugging and IntelliSense s
 
 4. Set breakpoints in the compiler code to debug the lexer, parser, or interpreter
 
-### Run the compiler (normal mode):
+### Running Published Builds
+
+After publishing, you can run the compiler directly:
+
+**Framework-Dependent:**
+```bash
+./publish/PascalCompiler.exe examples/hello.pas
+```
+
+**Self-Contained:**
+```bash
+./publish-standalone/PascalCompiler.exe examples/hello.pas
+```
+
+The self-contained version can be distributed to machines without .NET installed.
+
+### Run the compiler (development mode):
 
 ```bash
 # Run with demo Fibonacci program (interactive)
