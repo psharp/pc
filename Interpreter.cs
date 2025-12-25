@@ -93,6 +93,13 @@ public class Interpreter
             }
         }
 
+        // Initialize constants
+        foreach (var constDecl in program.Constants)
+        {
+            object? value = EvaluateExpression(constDecl.Value);
+            _variables[constDecl.Name.ToLower()] = value;
+        }
+
         // Initialize global variables
         foreach (var varDecl in program.Variables)
         {
@@ -557,6 +564,25 @@ public class Interpreter
                 }
                 break;
 
+            case RecordFieldArrayAssignmentNode recFldArrAssignment:
+                string recFieldArrName = recFldArrAssignment.RecordName.ToLower();
+                string recFldName = recFldArrAssignment.FieldName.ToLower();
+                object? recFldValue = EvaluateExpression(recFldArrAssignment.Value);
+                if (_records.ContainsKey(recFieldArrName))
+                {
+                    var recDict = _records[recFieldArrName];
+                    if (recDict.ContainsKey(recFldName))
+                    {
+                        // The field should be an array
+                        if (recDict[recFldName] is Dictionary<int, object?> fieldArray)
+                        {
+                            int index = Convert.ToInt32(EvaluateExpression(recFldArrAssignment.Indices[0]));
+                            fieldArray[index] = recFldValue;
+                        }
+                    }
+                }
+                break;
+
             case ArrayRecordAssignmentNode arrayRecAssignment:
                 int arrIdx = Convert.ToInt32(EvaluateExpression(arrayRecAssignment.Index));
                 object? arrRecValue = EvaluateExpression(arrayRecAssignment.Value);
@@ -841,6 +867,29 @@ public class Interpreter
                     throw new Exception($"Field '{recordAccess.FieldName}' not found in record '{recordAccess.RecordName}'");
                 }
                 throw new Exception($"Record variable '{recordAccess.RecordName}' not found");
+
+            case RecordFieldArrayAccessNode recFieldArrAccess:
+                string recName = recFieldArrAccess.RecordName.ToLower();
+                string recFieldName = recFieldArrAccess.FieldName.ToLower();
+                if (_records.TryGetValue(recName, out var rec))
+                {
+                    if (rec.TryGetValue(recFieldName, out object? fieldValue))
+                    {
+                        // The field should be an array
+                        if (fieldValue is Dictionary<int, object?> fieldArray)
+                        {
+                            int index = Convert.ToInt32(EvaluateExpression(recFieldArrAccess.Indices[0]));
+                            if (fieldArray.TryGetValue(index, out object? elemValue))
+                            {
+                                return elemValue;
+                            }
+                            throw new Exception($"Array index {index} out of bounds for field '{recFieldArrAccess.FieldName}'");
+                        }
+                        throw new Exception($"Field '{recFieldArrAccess.FieldName}' is not an array");
+                    }
+                    throw new Exception($"Field '{recFieldArrAccess.FieldName}' not found in record '{recFieldArrAccess.RecordName}'");
+                }
+                throw new Exception($"Record variable '{recFieldArrAccess.RecordName}' not found");
 
             case ArrayRecordAccessNode arrayRecAccess:
                 int arrayIdx = Convert.ToInt32(EvaluateExpression(arrayRecAccess.Index));

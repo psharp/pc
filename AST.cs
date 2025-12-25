@@ -28,6 +28,9 @@ public class ProgramNode : ASTNode
     /// <summary>Gets the list of units referenced in the 'uses' clause.</summary>
     public List<string> UsedUnits { get; }
 
+    /// <summary>Gets the list of constant declarations.</summary>
+    public List<ConstDeclarationNode> Constants { get; }
+
     /// <summary>Gets the list of record type definitions.</summary>
     public List<RecordTypeNode> RecordTypes { get; }
 
@@ -61,7 +64,8 @@ public class ProgramNode : ASTNode
     /// <summary>Gets the main program block (begin...end).</summary>
     public BlockNode Block { get; }
 
-    public ProgramNode(string name, List<string> usedUnits, List<RecordTypeNode> recordTypes, List<EnumTypeNode> enumTypes,
+    public ProgramNode(string name, List<string> usedUnits, List<ConstDeclarationNode> constants,
+        List<RecordTypeNode> recordTypes, List<EnumTypeNode> enumTypes,
         List<VarDeclarationNode> variables, List<ArrayVarDeclarationNode> arrayVariables,
         List<RecordVarDeclarationNode> recordVariables, List<FileVarDeclarationNode> fileVariables,
         List<PointerVarDeclarationNode> pointerVariables, List<SetVarDeclarationNode> setVariables,
@@ -70,6 +74,7 @@ public class ProgramNode : ASTNode
     {
         Name = name;
         UsedUnits = usedUnits;
+        Constants = constants;
         RecordTypes = recordTypes;
         EnumTypes = enumTypes;
         Variables = variables;
@@ -224,10 +229,12 @@ public class WriteNode : StatementNode
 public class ReadNode : StatementNode
 {
     public List<string> Variables { get; }
+    public bool ReadLine { get; }
 
-    public ReadNode(List<string> variables)
+    public ReadNode(List<string> variables, bool readLine = false)
     {
         Variables = variables;
+        ReadLine = readLine;
     }
 }
 
@@ -347,6 +354,22 @@ public class CaseLabel
     {
         StartValue = startValue;
         EndValue = endValue;
+    }
+}
+
+/// <summary>
+/// Represents a constant declaration.
+/// Syntax: const Name = Value;
+/// </summary>
+public class ConstDeclarationNode : ASTNode
+{
+    public string Name { get; }
+    public ExpressionNode Value { get; }
+
+    public ConstDeclarationNode(string name, ExpressionNode value)
+    {
+        Name = name;
+        Value = value;
     }
 }
 
@@ -691,6 +714,23 @@ public class RecordAccessNode : ExpressionNode
     }
 }
 
+/// <summary>
+/// Represents accessing an array element of a record's field (e.g., record.field[index])
+/// </summary>
+public class RecordFieldArrayAccessNode : ExpressionNode
+{
+    public string RecordName { get; }
+    public string FieldName { get; }
+    public List<ExpressionNode> Indices { get; }
+
+    public RecordFieldArrayAccessNode(string recordName, string fieldName, List<ExpressionNode> indices)
+    {
+        RecordName = recordName;
+        FieldName = fieldName;
+        Indices = indices;
+    }
+}
+
 // Record field assignment statement (e.g., person.name := 'John')
 public class RecordAssignmentNode : StatementNode
 {
@@ -702,6 +742,25 @@ public class RecordAssignmentNode : StatementNode
     {
         RecordName = recordName;
         FieldName = fieldName;
+        Value = value;
+    }
+}
+
+/// <summary>
+/// Represents assigning to an array element of a record's field (e.g., record.field[index] := value)
+/// </summary>
+public class RecordFieldArrayAssignmentNode : StatementNode
+{
+    public string RecordName { get; }
+    public string FieldName { get; }
+    public List<ExpressionNode> Indices { get; }
+    public ExpressionNode Value { get; }
+
+    public RecordFieldArrayAssignmentNode(string recordName, string fieldName, List<ExpressionNode> indices, ExpressionNode value)
+    {
+        RecordName = recordName;
+        FieldName = fieldName;
+        Indices = indices;
         Value = value;
     }
 }

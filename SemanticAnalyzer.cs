@@ -18,6 +18,9 @@ public class SemanticAnalyzer
     /// <summary>Symbol table mapping variable names to types.</summary>
     private readonly Dictionary<string, string> _symbolTable = new();
 
+    /// <summary>Maps constant names to their values.</summary>
+    private readonly Dictionary<string, object> _constants = new();
+
     /// <summary>Maps array variable names to their type information.</summary>
     private readonly Dictionary<string, ArrayTypeNode> _arrayTypes = new();
 
@@ -196,6 +199,29 @@ public class SemanticAnalyzer
                     {
                         _enumValues[valueName] = typeName;
                     }
+                }
+            }
+        }
+
+        // Register constants
+        foreach (var constDecl in program.Constants)
+        {
+            string constName = constDecl.Name.ToLower();
+            if (_constants.ContainsKey(constName) || _symbolTable.ContainsKey(constName))
+            {
+                _errors.Add($"Constant '{constDecl.Name}' is already declared");
+            }
+            else
+            {
+                // Evaluate constant expression (must be a literal for now)
+                object? constValue = EvaluateConstantExpression(constDecl.Value);
+                if (constValue != null)
+                {
+                    _constants[constName] = constValue;
+                }
+                else
+                {
+                    _errors.Add($"Constant '{constDecl.Name}' must have a literal value");
                 }
             }
         }
@@ -1266,6 +1292,22 @@ public class SemanticAnalyzer
         }
 
         return false;
+    }
+
+    // Evaluate a constant expression (must be a literal)
+    private object? EvaluateConstantExpression(ExpressionNode expr)
+    {
+        switch (expr)
+        {
+            case NumberNode numLit:
+                return numLit.Value;
+            case StringNode strLit:
+                return strLit.Value;
+            case BooleanNode boolLit:
+                return boolLit.Value;
+            default:
+                return null; // Only literals are supported for constants
+        }
     }
 
     // Type checking for binary operations

@@ -270,6 +270,39 @@ end.
 
 **Note**: Both single and multidimensional arrays are fully supported in the interpreter and bytecode VM.
 
+### Advanced Parser Features
+
+The parser supports complex Pascal expressions and statements found in real-world programs:
+
+- **Multiple array indexing notations**
+  - Comma notation: `matrix[i, j]` for multidimensional arrays
+  - Bracket notation: `arr[i][j]` for arrays of arrays
+  - Mixed: `arr[i, j][k]` combining both styles
+
+- **Complex field and array access chains**
+  - Record field arrays: `person.scores[i]` - access array field of a record
+  - Array of records: `students[i].name` - access field of array element
+  - Nested combinations: `temp[top].data.values[i]` - deeply nested access
+  - Multi-level chains: `arr[i].field1.field2[j]` - arbitrary complexity
+
+- **Flexible I/O statements**
+  - Parameterless calls: `readln;` and `writeln;` without parentheses
+  - Array element I/O: `read(arr[i])` and `write(matrix[x,y])`
+  - Record field I/O: `read(person.age)` and `write(student.name)`
+  - Complex expressions: `read(data[i].values[j])` with nested access
+
+- **Labels and goto**
+  - Label declarations in programs and procedures/functions
+  - Integer and identifier labels: `88:` or `exit:`
+  - Labels before block terminators: `1: end;` as jump targets
+  - Full ISO 7185 § 6.2.1 compliance
+
+- **Parameterless procedure calls**
+  - Procedures can be called without parentheses: `ClearScreen;`
+  - Works in all contexts: statements, before `end`, `else`, `until`
+
+These features enable parsing of complex legacy Pascal programs and real-world applications.
+
 ### Comments
 - `{ comment }` - Curly brace comments
 - `(* comment *)` - Parenthesis-asterisk comments

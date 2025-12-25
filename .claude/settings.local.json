@@ -12,7 +12,8 @@
       "Bash(Measure-Object -Line)",
       "Bash(powershell -Command \"Get-Content ''d:\\\\dev\\\\pc\\\\Lexer.cs'' | Select-String -Pattern ''enum TokenType'' -Context 0,60\")",
       "Bash(powershell -Command \"Get-Content ''d:\\\\dev\\\\pc\\\\Interpreter.cs'' | Measure-Object -Line\")",
-      "Bash(powershell -Command \"Get-Content ''d:\\\\dev\\\\pc\\\\project_history.txt'' | Select-Object -Last 10\")"
+      "Bash(powershell -Command \"Get-Content ''d:\\\\dev\\\\pc\\\\project_history.txt'' | Select-Object -Last 10\")",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []
