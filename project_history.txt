@@ -2945,3 +2945,68 @@ Files Modified:
 
 These enhancements enable the parser to handle complex legacy Pascal programs with
 advanced constructs while maintaining full backward compatibility.
+
+Files Modified:
+- Parser.cs (10 major enhancements across expression and statement parsing)
+- AST.cs (added RecordFieldArrayAccessNode and RecordFieldArrayAssignmentNode)
+- Interpreter.cs (execution support for new node types)
+- README.md (added "Advanced Parser Features" section)
+- project_history.txt (this entry)
+
+These enhancements enable the parser to handle complex legacy Pascal programs with
+advanced constructs while maintaining full backward compatibility.
+
+================================================
+Session 17 (continued): Array-of-Records Bug Fixes
+Date: December 25, 2024
+
+User Request: Fix semantic error in examples/students.pas
+
+Problem Identified:
+The students.pas example was failing with semantic error:
+"Right operand of arithmetic operation must be numeric, got unknown"
+
+This occurred when analyzing expressions like students[i].grade where students is
+an array of records.
+
+Root Causes:
+1. Semantic Analyzer Case Sensitivity Bug
+   - GetRecordFieldType() expected a variable name, not a type name
+   - ArrayRecordAccessNode returns element type (e.g., "Student")
+   - Record types stored in lowercase ("student") but lookup was case-sensitive
+   - Result: Type lookup failed, returned "unknown"
+
+2. Interpreter Array Initialization Bug
+   - Arrays initialized with 0-based indices (0, 1, 2)
+   - Pascal arrays use declared bounds (1, 2, 3 for array[1..3])
+   - Result: Dictionary key not found errors at runtime
+
+Fixes Applied:
+
+1. SemanticAnalyzer.cs Enhancement
+   - Added new method GetRecordFieldTypeFromTypeName()
+   - Looks up field types directly from type name (not variable name)
+   - Added .ToLower() for case-insensitive lookup (line 1182)
+   - Updated GetExpressionType() to use new method for ArrayRecordAccessNode
+
+2. Interpreter.cs Array Initialization Fix
+   - Changed single-dimensional array initialization to use declared bounds
+   - For array[1..3], now creates keys 1, 2, 3 (not 0, 1, 2)
+   - Applies to both record arrays and basic type arrays
+   - Multidimensional arrays still use 0-based linearized indexing
+
+Testing:
+- Ran comprehensive test of all 30 example programs
+- Results: 29 passed, 0 failed (1 unknown - intentional error example)
+- students.pas now works correctly:
+  * Displays student database with names, ages, grades
+  * Calculates average grade correctly (85)
+- All existing tests maintained (384+ tests still passing)
+
+Files Modified:
+- SemanticAnalyzer.cs (added GetRecordFieldTypeFromTypeName method)
+- Interpreter.cs (fixed array initialization to use declared bounds)
+- project_history.txt (this entry)
+
+This fix ensures proper type checking and execution for arrays of records,
+a common pattern in Pascal programs.

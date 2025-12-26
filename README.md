@@ -349,6 +349,19 @@ For other platforms, replace `win-x64` with:
 - `osx-x64` - macOS Intel
 - `osx-arm64` - macOS Apple Silicon
 
+### Testing All Examples
+
+Test all example programs to verify everything works:
+```powershell
+# PowerShell
+powershell -ExecutionPolicy Bypass -File test_all_examples.ps1
+```
+
+This runs all 30 example programs and reports:
+- ✅ 29 programs pass successfully
+- Tests include: arrays, records, file I/O, pointers, functions, ISO 7185 compliance tests, and more
+- Validates lexical analysis, parsing, semantic analysis, and execution
+
 ### Run the tests:
 ```bash
 dotnet test

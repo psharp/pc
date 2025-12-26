@@ -1,4 +1,0 @@
-Line 1 from source file
-Line 2 from source file
-Line 3 from source file
-This is the final line

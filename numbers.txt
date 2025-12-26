@@ -1,6 +1,0 @@
-Student Scores:
-Score 1: 85
-Score 2: 92
-Score 3: 78
-Score 4: 95
-Score 5: 88

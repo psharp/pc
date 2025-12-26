@@ -13,7 +13,13 @@
       "Bash(powershell -Command \"Get-Content ''d:\\\\dev\\\\pc\\\\Lexer.cs'' | Select-String -Pattern ''enum TokenType'' -Context 0,60\")",
       "Bash(powershell -Command \"Get-Content ''d:\\\\dev\\\\pc\\\\Interpreter.cs'' | Measure-Object -Line\")",
       "Bash(powershell -Command \"Get-Content ''d:\\\\dev\\\\pc\\\\project_history.txt'' | Select-Object -Last 10\")",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(for file in examples/*.pas)",
+      "Bash(do:*)",
+      "Bash(echo:*)",
+      "Bash(timeout 5 dotnet run:*)",
+      "Bash(done)",
+      "Bash(powershell:*)"
     ],
     "deny": [],
     "ask": []

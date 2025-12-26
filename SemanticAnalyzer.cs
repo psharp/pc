@@ -1107,7 +1107,7 @@ public class SemanticAnalyzer
             VariableNode variable => GetVariableOrEnumType(variable.Name),
             ArrayAccessNode arrayAccess => GetArrayElementType(arrayAccess.ArrayName),
             RecordAccessNode recordAccess => GetRecordFieldType(recordAccess.RecordName, recordAccess.FieldName),
-            ArrayRecordAccessNode arrayRecAccess => GetRecordFieldType(GetArrayElementType(arrayRecAccess.ArrayName), arrayRecAccess.FieldName),
+            ArrayRecordAccessNode arrayRecAccess => GetRecordFieldTypeFromTypeName(GetArrayElementType(arrayRecAccess.ArrayName), arrayRecAccess.FieldName),
             FunctionCallNode funcCall => GetFunctionReturnType(funcCall.Name),
             FileEofNode => "boolean",
             PointerDereferenceNode ptrDeref => GetPointerDereferenceType(ptrDeref.Pointer),
@@ -1171,6 +1171,21 @@ public class SemanticAnalyzer
                     {
                         return field.Type;
                     }
+                }
+            }
+        }
+        return "unknown";
+    }
+
+    private string GetRecordFieldTypeFromTypeName(string typeName, string fieldName)
+    {
+        if (_recordTypeDefinitions.TryGetValue(typeName.ToLower(), out var recordType))
+        {
+            foreach (var field in recordType.Fields)
+            {
+                if (field.Names.Any(n => n.Equals(fieldName, System.StringComparison.OrdinalIgnoreCase)))
+                {
+                    return field.Type;
                 }
             }
         }

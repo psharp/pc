@@ -130,27 +130,61 @@ public class Interpreter
                 // Check if element type is a record
                 if (_recordTypes.ContainsKey(elemType.ToLower()))
                 {
-                    // Initialize array of records
-                    for (int i = 0; i < totalSize; i++)
+                    // Initialize array of records using actual array bounds
+                    // For single-dimensional arrays, use the declared bounds
+                    if (arrayDecl.ArrayType.Dimensions.Count == 1)
                     {
-                        var recordData = new Dictionary<string, object?>();
-                        var recordType = _recordTypes[elemType.ToLower()];
-                        foreach (var field in recordType.Fields)
+                        var dim = arrayDecl.ArrayType.Dimensions[0];
+                        for (int i = dim.LowerBound; i <= dim.UpperBound; i++)
                         {
-                            foreach (var fieldName in field.Names)
+                            var recordData = new Dictionary<string, object?>();
+                            var recordType = _recordTypes[elemType.ToLower()];
+                            foreach (var field in recordType.Fields)
                             {
-                                recordData[fieldName.ToLower()] = GetDefaultValue(field.Type);
+                                foreach (var fieldName in field.Names)
+                                {
+                                    recordData[fieldName.ToLower()] = GetDefaultValue(field.Type);
+                                }
                             }
+                            arrayData[i] = recordData;
                         }
-                        arrayData[i] = recordData;
+                    }
+                    else
+                    {
+                        // For multidimensional arrays, use 0-based indexing (linearized)
+                        for (int i = 0; i < totalSize; i++)
+                        {
+                            var recordData = new Dictionary<string, object?>();
+                            var recordType = _recordTypes[elemType.ToLower()];
+                            foreach (var field in recordType.Fields)
+                            {
+                                foreach (var fieldName in field.Names)
+                                {
+                                    recordData[fieldName.ToLower()] = GetDefaultValue(field.Type);
+                                }
+                            }
+                            arrayData[i] = recordData;
+                        }
                     }
                 }
                 else
                 {
-                    // Initialize array of basic types
-                    for (int i = 0; i < totalSize; i++)
+                    // Initialize array of basic types using actual array bounds
+                    if (arrayDecl.ArrayType.Dimensions.Count == 1)
                     {
-                        arrayData[i] = GetDefaultValue(elemType);
+                        var dim = arrayDecl.ArrayType.Dimensions[0];
+                        for (int i = dim.LowerBound; i <= dim.UpperBound; i++)
+                        {
+                            arrayData[i] = GetDefaultValue(elemType);
+                        }
+                    }
+                    else
+                    {
+                        // For multidimensional arrays, use 0-based indexing (linearized)
+                        for (int i = 0; i < totalSize; i++)
+                        {
+                            arrayData[i] = GetDefaultValue(elemType);
+                        }
                     }
                 }
                 _arrays[name.ToLower()] = arrayData;
